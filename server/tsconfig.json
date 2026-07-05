@@ -3,7 +3,6 @@
         "target": "ES2023",
         "module": "nodenext",
         "moduleResolution": "nodenext",
-        "baseUrl": "./",
         "paths": {},
         "types": ["jest", "node"],
         "resolveJsonModule": true,
