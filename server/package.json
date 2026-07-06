@@ -6,6 +6,7 @@
   "scripts": {
     "test": "jest",
     "dev": "tsx --watch src/index.ts",
+    "postinstall": "prisma generate",
     "build": "tsc",
     "start": "node dist/src/index.js",
     "dev:type-check": "tsc --noEmit --watch",
