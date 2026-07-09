@@ -27,25 +27,79 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
+          PROCEED="true"
           TAG=$(TZ=Asia/Manila date +'%Y-%m-%d')
           echo "tag=$TAG" >> "$GITHUB_OUTPUT"
 
           PREV_TAG=$(gh release list --limit 1 --json tagName -q '.[0].tagName' 2>/dev/null || true)
           echo "prev_tag=$PREV_TAG" >> "$GITHUB_OUTPUT"
+          if [[ "${{ github.event_name }}" == "schedule" ]]; then
+            echo "Schedule trigger: checking for new commits..."
 
-          if [[ -n "$PREV_TAG" ]]; then
-            COUNT=$(git rev-list "$PREV_TAG"..HEAD --count)
+            if [[ -n "$PREV_TAG" ]]; then
+              COUNT=$(git rev-list "$PREV_TAG"..HEAD --count)
+              echo "Commits since $PREV_TAG: $COUNT"
+              if [[ "$COUNT" == "0" ]]; then
+                echo "No new commits since last checkpoint ($PREV_TAG). Skipping."
+                PROCEED="false"
+              fi
+            else
+              echo "No previous checkpoint tag found. Proceeding (first-ever run)."
+              COUNT=$(git rev-list HEAD --count)
+            fi
           else
-            COUNT=$(git rev-list HEAD --count)
+            echo "Manual trigger. Proceeding regardless of changes."
+            COUNT=$(git rev-list "${PREV_TAG:-HEAD}"..HEAD --count 2>/dev/null || git rev-list HEAD --count)
           fi
-          echo "count=$COUNT" >> "$GITHUB_OUTPUT"
 
-          PROCEED="true"
-          if [[ "${{ github.event_name }}" == "schedule" && "$COUNT" == "0" ]]; then
-            echo "No new commits since last checkpoint ($PREV_TAG). Skipping."
-            PROCEED="false"
-          fi
+          echo "count=$COUNT" >> "$GITHUB_OUTPUT"
           echo "proceed=$PROCEED" >> "$GITHUB_OUTPUT"
+
+  release:
+    needs: changes
+    if: ${{ needs.changes.outputs.proceed == 'true' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Create release with auto-generated notes
+        id: release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG="${{ needs.changes.outputs.tag }}"
+          PREV_TAG="${{ needs.changes.outputs.prev_tag }}"
+          COUNT="${{ needs.changes.outputs.count }}"
+
+          if [ -n "$PREV_TAG" ]; then
+            GENERATED=$(gh api "repos/${{ github.repository }}/releases/generate-notes" \
+              -f tag_name="$TAG" \
+              -f target_commitish="${{ github.sha }}" \
+              -f previous_tag_name="$PREV_TAG" \
+              --jq .body)
+          else
+            GENERATED=$(gh api "repos/${{ github.repository }}/releases/generate-notes" \
+              -f tag_name="$TAG" \
+              -f target_commitish="${{ github.sha }}" \
+              --jq .body)
+          fi
+
+          HEADER="Daily checkpoint — ${COUNT} commit$( [ "$COUNT" != "1" ] && echo "s" ) shipped since the last checkpoint."
+
+          BODY="${HEADER}
+
+          ${GENERATED}"
+
+          gh release create "$TAG" \
+            --title "$TAG" \
+            --notes "$BODY"
+
+          echo "release_url=https://github.com/${{ github.repository }}/releases/tag/$TAG" >> "$GITHUB_OUTPUT"
       - name: Send Discord notification
         env:
           DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
@@ -56,11 +110,9 @@ jobs:
 
           PAYLOAD=$(jq -n \
             --arg username "GitHub" \
-            --arg avatar "https://avatars.githubusercontent.com/u/9919?s=200&v=4" \
+            --arg avatar "https://github.com/favicon.ico" \
             --arg title "$TAG" \
-            --arg desc "Daily checkpoint — ${COUNT} commit(s) shipped since the last checkpoint.
-
-          [View release]($RELEASE_URL)" \
+            --arg desc "Daily checkpoint — ${COUNT} commit(s) shipped since the last checkpoint." \
             --arg url "$RELEASE_URL" \
             '{
               username: $username,
