@@ -1,0 +1,18 @@
+model ClassroomInvite {
+  id          String       @id @default(cuid())
+  role        MemberRole   @default(STUDENT)
+  status      InviteStatus @default(PENDING)
+  createdAt   DateTime     @default(now())
+  respondedAt DateTime?
+
+  classroomId String
+  classroom   Classroom @relation(fields: [classroomId], references: [id], onDelete: Cascade)
+
+  invitedUserId String @db.Uuid
+  invitedUser   User   @relation("InviteRecipient", fields: [invitedUserId], references: [id], onDelete: Cascade)
+
+  invitedById String @db.Uuid
+  invitedBy   User   @relation("InviteSender", fields: [invitedById], references: [id])
+
+  @@unique([classroomId, invitedUserId, status])
+}

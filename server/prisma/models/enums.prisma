@@ -1,0 +1,10 @@
+enum MemberRole {
+  TEACHER
+  STUDENT
+}
+
+enum InviteStatus {
+  PENDING
+  ACCEPTED
+  DECLINED
+}

@@ -1,7 +1,16 @@
+// Mirrors a row in Supabase's auth.users table. This app's User table only
+// holds profile/app data — no email, password, or session logic here.
+// `id` must be set manually (from the Supabase auth user's id) rather than
+// auto-generated, since it's meant to match 1:1 with auth.users.id.
 model User {
-  id        Int      @id @default(autoincrement())
-  email     String   @unique
-  name      String?
+  id        String   @id @db.Uuid
+  fullName  String
+  avatarUrl String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  createdClassrooms Classroom[]       @relation("ClassroomCreator")
+  memberships       ClassroomMember[]
+  sentInvites       ClassroomInvite[] @relation("InviteSender")
+  receivedInvites   ClassroomInvite[] @relation("InviteRecipient")
 }
