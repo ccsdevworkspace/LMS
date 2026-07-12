@@ -1,0 +1,27 @@
+model Classroom {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  joinCode    String   @unique @default(cuid())
+  createdAt   DateTime @default(now())
+
+  createdById String @db.Uuid
+  createdBy   User   @relation("ClassroomCreator", fields: [createdById], references: [id])
+
+  members ClassroomMember[]
+  invites ClassroomInvite[]
+}
+
+model ClassroomMember {
+  id       String     @id @default(cuid())
+  role     MemberRole @default(STUDENT)
+  joinedAt DateTime   @default(now())
+
+  classroomId String
+  classroom   Classroom @relation(fields: [classroomId], references: [id], onDelete: Cascade)
+
+  userId String @db.Uuid
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([classroomId, userId])
+}
