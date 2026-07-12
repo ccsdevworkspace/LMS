@@ -4,7 +4,7 @@ const branch = process.env.VERCEL_GIT_COMMIT_REF || '';
 const slug = branch
     .replace(/\//g, '')
     .toLowerCase();
-console.log('DEBUG VERCEL_GIT_COMMIT_REF:', JSON.stringify(process.env.VERCEL_GIT_COMMIT_REF));
+
 if (branch && branch !== 'main') {
     process.env.VITE_API_BASE_URL = `https://lms--${slug}.ccs-dev.deno.net`;
 }
