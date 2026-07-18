@@ -6,7 +6,7 @@ import pluginJest from 'eslint-plugin-jest';
 
 export default [
     {
-        ignores: ['node_modules/', 'dist/', '.vscode/', 'eslint.config.js', 'jest.config.js'],
+        ignores: ['node_modules/', 'dist/', '.vscode/', 'eslint.config.js', 'jest.config.js', 'src/generated/', 'prisma.config.ts'],
     },
     eslint.configs.recommended,
     ...tseslint.configs.recommended,

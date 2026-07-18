@@ -7,13 +7,13 @@ const test = async (req: Request, res: Response) => {
 
         if (!num) {
             console.log('Resouce was not found');
-            res.status(404).json({ msg: "Not found" });
+            res.status(404).json({ msg: 'Not found' });
             return;
         }
 
         res.json({ num });
     } catch (error) {
-        res.status(500).json({ msg: "Internal Server Error" });
+        res.status(500).json({ msg: 'Internal Server Error' });
         console.error(error);
     }
 };
