@@ -7,7 +7,7 @@
     "test": "jest",
     "dev": "tsx --watch src/index.ts",
     "postinstall": "prisma generate",
-    "build": "prisma generate && tsc && shx cp -r src/generated/* dist/src/generated/",
+    "build": "tsc && shx cp -r src/generated/* dist/src/generated/",
     "start": "node dist/src/index.js",
     "dev:type-check": "tsc --noEmit --watch",
     "build-start": "npm run build && npm run start",
