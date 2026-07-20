@@ -5,6 +5,8 @@ import rateLimiter from './config/limiter.config.js';
 import corsConfig from './config/cors.config.js';
 import getterRoute from './routes/getter.route.js';
 import testRoute from './routes/test.route.js';
+import authRoute from './modules/auth/auth.routes.js';
+import userRoute from './modules/user/user.routes.js';
 
 const server = express();
 const PORT = process.env.PORT || 3000;
@@ -16,6 +18,8 @@ server.use(express.json());
 server.use(express.urlencoded({ extended: true }));
 server.use('/', getterRoute);
 server.use('/test', testRoute);
+server.use('/auth', authRoute);
+server.use('/user', userRoute);
 
 server.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
