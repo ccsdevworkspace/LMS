@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const branch = import.meta.env.VERCEL_GIT_COMMIT_REF || '';
+const branch = process.env.VERCEL_GIT_COMMIT_REF || '';
 const slug = branch
     .replace(/\//g, '')
     .toLowerCase();
