@@ -11,23 +11,20 @@ export function createSupabaseClient(req: Request, res: Response) {
         cookieOptions: {
             httpOnly: true,
             secure: env.isProduction,
+            sameSite: 'lax',
+            path: '/',
         },
         cookies: {
             getAll() {
                 return parseCookieHeader(req.headers.cookie ?? '');
             },
-            setAll(cookiesToSet, headers) {
+            setAll(cookiesToSet) {
                 cookiesToSet.forEach(({ name, value, options }) =>
                     res.appendHeader(
                         'Set-Cookie',
                         serializeCookieHeader(name, value, options),
                     ),
                 );
-                if (headers) {
-                    Object.entries(headers).forEach(([key, value]) =>
-                        res.setHeader(key, value),
-                    );
-                }
             },
         },
     });
