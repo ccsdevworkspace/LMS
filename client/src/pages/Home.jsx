@@ -1,33 +1,32 @@
-import { api } from '../api/client';
-import { useState } from 'react';
+import { useState } from 'react'
+import { Navigate } from 'react-router-dom'
+import { useAuthStore } from '../stores/auth'
+import Sidebar from '../components/landing/Sidebar'
+import Hero from '../components/landing/Hero'
+import AuthModal from '../components/landing/AuthModal'
 
-function Home() {
-    const [num, setNum] = useState(0);
-    const [result, setResult] = useState(null);
+export default function Home() {
+  const [isModalOpen, setIsModalOpen] = useState(false)
+  const user = useAuthStore((s) => s.user)
+  const loading = useAuthStore((s) => s.loading)
+  const login = useAuthStore((s) => s.login)
 
-    const handleClick = async () => {
-        try {
-            const response = await api.post('/test', { num });
-            setResult(response.data);
-        } catch (err) {
-            console.error(err);
-        }
-    };
+  if (user && !loading) {
+    return <Navigate to="/dashboard" replace />
+  }
 
-    return (
-        <div>
-            <input
-                type="number"
-                value={num}
-                onChange={(e) => setNum(e.target.value)}
-            />
-            <button onClick={handleClick}>Click Me!</button>
-
-            {result && (
-                <pre>{JSON.stringify(result, null, 2)}</pre>
-            )}
-        </div>
-    );
+  return (
+    <main className="flex min-h-screen bg-app">
+      <Sidebar />
+      <div className="flex-1 w-full relative">
+        <Hero openModal={() => setIsModalOpen(true)} />
+      </div>
+      
+      <AuthModal 
+        open={isModalOpen} 
+        closeModal={() => setIsModalOpen(false)} 
+        handleLogin={login} 
+      />
+    </main>
+  )
 }
-
-export default Home;

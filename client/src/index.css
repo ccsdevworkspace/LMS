@@ -1,0 +1,143 @@
+@import 'tailwindcss';
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+  --font-sans: "Inter", sans-serif, system-ui;
+
+  --color-primary-600: var(--primary-600);
+  --color-primary: var(--primary-500);
+  --color-primary-400: var(--primary-400);
+  --color-primary-300: var(--primary-300);
+  --color-primary-200: var(--primary-200);
+  --color-primary-100: var(--primary-100);
+  --color-primary-50: var(--primary-50);
+
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-danger: var(--danger);
+  --color-info: var(--info);
+
+  --color-app: var(--bg-app);
+  --color-surface: var(--bg-surface);
+  --color-card: var(--bg-card);
+  --color-muted: var(--bg-muted);
+  --color-soft: var(--bg-soft);
+
+  --color-fg: var(--text-primary);
+  --color-fg-muted: var(--text-secondary);
+  --color-fg-subtle: var(--text-muted);
+  --color-fg-disabled: var(--text-disabled);
+  --color-fg-inverse: var(--text-inverse);
+
+  --color-border: var(--border);
+  --color-border-hover: var(--border-hover);
+  --color-border-active: var(--border-active);
+
+  --color-nav: var(--nav-bg);
+  --color-nav-active: var(--nav-active);
+
+  --color-input: var(--input-bg);
+  --color-input-border: var(--input-border);
+  --color-modal: var(--modal-bg);
+
+  --color-btn: var(--button-primary);
+  --color-btn-hover: var(--button-primary-hover);
+
+  --shadow-sm: var(--shadow-sm);
+  --shadow-md: var(--shadow-md);
+  --shadow-lg: var(--shadow-lg);
+}
+
+:root {
+  --primary-600: #0F6B68;
+  --primary-500: #2A8A86;
+  --primary-400: #5CA9A4;
+  --primary-300: #8ECBC5;
+  --primary-200: #CBEFEB;
+  --primary-100: #DFF5F2;
+  --primary-50: #F7FCFB;
+
+  --success: #23A36D;
+  --warning: #E8A93A;
+  --danger: #E25757;
+  --info: #4C8BF5;
+
+  --bg-app: #F7F8FA;
+  --bg-surface: #FFFFFF;
+  --bg-card: #FFFFFF;
+  --bg-muted: #FBFBFB;
+  --bg-soft: #F1F2Ef;
+
+  --text-primary: #202428;
+  --text-secondary: #56616B;
+  --text-muted: #8C98A4;
+  --text-disabled: #C3CBD3;
+  --text-inverse: #FFFFFF;
+
+  --border: #E8ECEF;
+  --border-hover: #DCE3E7;
+  --border-active: #CBEFEB;
+
+  --button-primary: #0F6B68;
+  --button-primary-hover: #125F5D;
+
+  --nav-bg: #FFFFFF;
+  --nav-active: #DFF5F2;
+  
+  --input-bg: #FFFFFF;
+  --input-border: #E8ECEF;
+  --modal-bg: #FFFFFF;
+
+  --shadow-sm: 0 4px 18px rgba(15,107,104,.04);
+  --shadow-md: 0 12px 32px rgba(15,107,104,.08);
+  --shadow-lg: 0 24px 60px rgba(15,107,104,.12);
+
+  color-scheme: light;
+}
+
+.dark {
+  --primary-600: #23A19C;
+  --primary-500: #3FB7B1;
+  --primary-400: #67C9C3;
+  --primary-300: #93DBD5;
+  --primary-200: #C6F1ED;
+  --primary-100: rgba(35,161,156,.18);
+  --primary-50: rgba(35,161,156,.08);
+
+  --success: #36C97E;
+  --warning: #F4B84A;
+  --danger: #F06C6C;
+  --info: #67A8FF;
+
+  --bg-app: #111315;
+  --bg-surface: #181B1F;
+  --bg-card: #1E2227;
+  --bg-muted: #23282D;
+  --bg-soft: #272D33;
+
+  --text-primary: #F5F7F8;
+  --text-secondary: #C3CDD5;
+  --text-muted: #8D98A3;
+  --text-disabled: #69737D;
+  --text-inverse: #111315;
+
+  --border: #2C333A;
+  --border-hover: #3B444D;
+  --border-active: #3FB7B1;
+
+  --button-primary: #23A19C;
+  --button-primary-hover: #2DB3AE;
+
+  --nav-bg: #1A1E22;
+  --nav-active: rgba(35,161,156,.16);
+  --input-bg: #1D2126;
+  --input-border: #323940;
+  --modal-bg: #1B1F24;
+
+  --shadow-sm: none;
+  --shadow-md: none;
+  --shadow-lg: none;
+
+  color-scheme: dark;
+}
