@@ -11,7 +11,7 @@ export function createSupabaseClient(req: Request, res: Response) {
         cookieOptions: {
             httpOnly: true,
             secure: env.isProduction,
-            sameSite: 'lax',
+            sameSite: env.isProduction ? 'none' : 'lax',
             path: '/',
         },
         cookies: {
