@@ -11,8 +11,8 @@ import userRoute from './modules/user/user.routes.js';
 const server = express();
 const PORT = process.env.PORT || 3000;
 
-server.use(rateLimiter);
 server.use(corsConfig);
+server.use(rateLimiter);
 server.use(helmet());
 server.use(express.json());
 server.use(express.urlencoded({ extended: true }));
