@@ -7,11 +7,15 @@ import {
 import { env } from './env.config.js';
 
 export function createSupabaseClient(req: Request, res: Response) {
+    const crossSite = process.env.CROSS_SITE === 'true';
+    const sameSite = crossSite ? 'none' : 'lax';
+    const secure = crossSite || env.isProduction;
+
     return createServerClient(env.supabaseUrl, env.supabasePublishableKey, {
         cookieOptions: {
             httpOnly: true,
-            secure: env.isProduction,
-            sameSite: env.isProduction ? 'none' : 'lax',
+            secure,
+            sameSite,
             path: '/',
         },
         cookies: {
