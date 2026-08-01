@@ -12,15 +12,12 @@
     "build": "node src/api/set-api-url.js && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "dist": "npm run build && electron-builder"
+    "dist": "electron-builder"
   },
   "build": {
     "appId": "com.ccs-dev.b-app",
     "productName": "B App",
-    "files": [
-      "dist/**/*",
-      "electron/**/*"
-    ],
+    "files": ["electron/**/*"],
     "directories": {
       "output": "release"
     },
