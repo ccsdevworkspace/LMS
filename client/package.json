@@ -17,10 +17,7 @@
   "build": {
     "appId": "com.ccs-dev.b-app",
     "productName": "B App",
-    "files": [
-      "dist/**/*",
-      "electron/**/*"
-    ],
+    "files": ["electron/**/*"],
     "directories": {
       "output": "release"
     },
