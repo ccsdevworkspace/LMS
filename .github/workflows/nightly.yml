@@ -1,95 +1,74 @@
-name: Nightly Checkpoint
+name: Release
 
 on:
-  schedule:
-    # 15:59 UTC = 23:59 (11:59 PM) Philippine Time (UTC+8)
-    - cron: '59 15 * * *'
-  workflow_dispatch: {}
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+defaults:
+  run:
+    working-directory: client
 
 jobs:
-  changes:
-    runs-on: ubuntu-latest
-    outputs:
-      proceed: ${{ steps.check.outputs.proceed }}
-      tag: ${{ steps.check.outputs.tag }}
-      prev_tag: ${{ steps.check.outputs.prev_tag }}
-      count: ${{ steps.check.outputs.count }}
-    permissions:
-      contents: read
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v6
-        with:
-          fetch-depth: 0
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
 
-      - name: Check for changes since last checkpoint
-        id: check
+    runs-on: ${{ matrix.os }}
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: client/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build and publish
+        run: npm run dist -- --publish always
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          TAG=$(TZ=Asia/Manila date +'%Y-%m-%d')
-          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
 
-          PREV_TAG=$(gh release list --limit 1 --json tagName -q '.[0].tagName' 2>/dev/null || true)
-          echo "prev_tag=$PREV_TAG" >> "$GITHUB_OUTPUT"
-
-          if [[ -n "$PREV_TAG" ]]; then
-            COUNT=$(git rev-list "$PREV_TAG"..HEAD --count)
-          else
-            COUNT=$(git rev-list HEAD --count)
-          fi
-          echo "count=$COUNT" >> "$GITHUB_OUTPUT"
-
-          PROCEED="true"
-          if [[ "${{ github.event_name }}" == "schedule" && "$COUNT" == "0" ]]; then
-            echo "No new commits since last checkpoint ($PREV_TAG). Skipping."
-            PROCEED="false"
-          fi
-          echo "proceed=$PROCEED" >> "$GITHUB_OUTPUT"
-
-  release:
-    needs: changes
-    if: ${{ needs.changes.outputs.proceed == 'true' }}
+  notify:
+    needs: build
     runs-on: ubuntu-latest
     permissions:
       contents: write
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v6
+      - name: Checkout
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: Create release with auto-generated notes
-        id: release
+      - name: Generate and attach release notes
+        id: notes
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          TAG="${{ needs.changes.outputs.tag }}"
-          PREV_TAG="${{ needs.changes.outputs.prev_tag }}"
-          COUNT="${{ needs.changes.outputs.count }}"
+          TAG="${{ github.ref_name }}"
 
-          if [ -n "$PREV_TAG" ]; then
-            GENERATED=$(gh api "repos/${{ github.repository }}/releases/generate-notes" \
-              -f tag_name="$TAG" \
-              -f target_commitish="${{ github.sha }}" \
-              -f previous_tag_name="$PREV_TAG" \
-              --jq .body)
-          else
-            GENERATED=$(gh api "repos/${{ github.repository }}/releases/generate-notes" \
-              -f tag_name="$TAG" \
-              -f target_commitish="${{ github.sha }}" \
-              --jq .body)
-          fi
+          BODY=$(gh api "repos/${{ github.repository }}/releases/generate-notes" \
+            -f tag_name="$TAG" \
+            --jq .body)
 
-          HEADER="Daily checkpoint — ${COUNT} commit$( [ "$COUNT" != "1" ] && echo "s" ) shipped since the last checkpoint."
+          gh release edit "$TAG" --notes "$BODY"
 
-          BODY="${HEADER}
-
-          ${GENERATED}"
-
-          gh release create "$TAG" \
-            --title "$TAG" \
-            --notes "$BODY"
+          {
+            echo "body<<EOF"
+            echo "$BODY"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
 
       - name: Send Discord notification
         uses: sarisia/actions-status-discord@v1
@@ -103,6 +82,6 @@ jobs:
           username: GitHub
           avatar_url: https://avatars.githubusercontent.com/u/9919?s=200&v=4
           description: |
-            ## [📋 ${{ needs.changes.outputs.tag }}](https://github.com/${{ github.repository }}/releases/tag/${{ needs.changes.outputs.tag }})
+            ## [📋 ${{ github.ref_name }}](https://github.com/${{ github.repository }}/releases/tag/${{ github.ref_name }})
 
-            Daily checkpoint — ${{ needs.changes.outputs.count }} commit(s) shipped since the last checkpoint.
+            ${{ steps.notes.outputs.body }}
