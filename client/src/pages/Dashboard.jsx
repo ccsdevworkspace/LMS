@@ -1,15 +1,14 @@
-import { useUserStore } from '../stores/user'
+import Grid from '../components/dashboard/Grid';
+import { quoteOfTheDay } from '../components/dashboard/quotes'
 
 export default function Dashboard() {
-  const profile = useUserStore((state) => state.profile)
+  const quote = quoteOfTheDay()
 
   return (
-    <main className="p-8">
-      {profile && (
-        <h1 className="text-2xl">
-          Welcome, {profile.fullName}!
-        </h1>
-      )}
-    </main>
+  <main className="flex flex-col mt-12">
+    <section className="flex-1 p-6 sm:p-12 lg:p-18">
+      <Grid quote={quote} />
+    </section>
+  </main>
   )
 }
