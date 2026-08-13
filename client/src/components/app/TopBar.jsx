@@ -10,7 +10,6 @@ const NAV_LINKS = [
   { label: 'Courses',   path: '/courses' },
   { label: 'To-Do',     path: '/todo' },
   { label: 'Calendar',  path: '/calendar' },
-  { label: 'Chat',      path: '/chat' },
 ]
 
 function Avatar({ profile }) {
