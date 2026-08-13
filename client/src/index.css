@@ -69,13 +69,13 @@
   --bg-muted: #FBFBFB;
   --bg-soft: #F1F2Ef;
 
-  --text-primary: #202428;
+  --text-primary: #1F2937;
   --text-secondary: #56616B;
   --text-muted: #8C98A4;
   --text-disabled: #C3CBD3;
   --text-inverse: #FFFFFF;
 
-  --border: #E8ECEF;
+  --border: #E5E5E5;
   --border-hover: #DCE3E7;
   --border-active: #CBEFEB;
 
@@ -97,47 +97,48 @@
 }
 
 .dark {
-  --primary-600: #23A19C;
-  --primary-500: #3FB7B1;
-  --primary-400: #67C9C3;
-  --primary-300: #93DBD5;
-  --primary-200: #C6F1ED;
-  --primary-100: rgba(35,161,156,.18);
-  --primary-50: rgba(35,161,156,.08);
+  --primary-600: #1F8F8A;
+  --primary-500: #2FA6A1;
+  --primary-400: #55BDB7;
+  --primary-300: #82D2CD;
+  --primary-200: #B8E9E5;
+  --primary-100: rgba(47,166,161,.16);
+  --primary-50: rgba(47,166,161,.07);
 
-  --success: #36C97E;
-  --warning: #F4B84A;
-  --danger: #F06C6C;
-  --info: #67A8FF;
+  --success: #35C77C;
+  --warning: #F2B544;
+  --danger: #EF6868;
+  --info: #619EFF;
 
-  --bg-app: #111315;
-  --bg-surface: #181B1F;
-  --bg-card: #1E2227;
-  --bg-muted: #23282D;
-  --bg-soft: #272D33;
+  --bg-app: #0B0D0D;
+  --bg-surface: #101212;
+  --bg-card: #151817;
+  --bg-muted: #1A1D1C;
+  --bg-soft: #202422;
 
-  --text-primary: #F5F7F8;
-  --text-secondary: #C3CDD5;
-  --text-muted: #8D98A3;
-  --text-disabled: #69737D;
-  --text-inverse: #111315;
+  --text-primary: #F4F7F6;
+  --text-secondary:#B7C0BE;
+  --text-muted: #858F8C;
+  --text-disabled: #5C6562;
+  --text-inverse: #0B0D0D;
 
-  --border: #2C333A;
-  --border-hover: #3B444D;
-  --border-active: #3FB7B1;
+  --border: #292E2C;  
+  --border-hover: #3A423F; 
+  --border-active: #2FA6A1;
 
-  --button-primary: #23A19C;
-  --button-primary-hover: #2DB3AE;
+  --button-primary: #218E89;
+  --button-primary-hover: #2BA39E;
 
-  --nav-bg: #1A1E22;
-  --nav-active: rgba(35,161,156,.16);
-  --input-bg: #1D2126;
-  --input-border: #323940;
-  --modal-bg: #1B1F24;
+  --nav-bg: #0F1111;
+  --nav-active: rgba(47,166,161,.14);
 
-  --shadow-sm: none;
-  --shadow-md: none;
-  --shadow-lg: none;
+  --input-bg: #121514;
+  --input-border: #292E2C;
+  --modal-bg: #121514;
+
+  --shadow-sm:  none;
+  --shadow-md:  none;
+  --shadow-lg:  none;
 
   color-scheme: dark;
 }
