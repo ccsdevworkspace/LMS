@@ -1,0 +1,17 @@
+model Course {
+  id          String   @id @default(cuid())
+
+  name        String
+  section     String
+  schedule    Json?
+
+  joinCode    String   @unique @default(nanoid(6))
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  createdById String   @db.Uuid
+  createdBy   User     @relation("CourseCreator", fields: [createdById], references: [id])
+
+  members     CourseMember[]
+}
