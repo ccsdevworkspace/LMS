@@ -1,17 +1,19 @@
 model Course {
-  id          String   @id @default(cuid())
+  id        String   @id @default(cuid())
+  name      String
+  section   String?
+  days      String[]
+  startTime String
+  endTime   String
+  joinCode  String   @unique @default(nanoid(6))
+  createdAt DateTime @default(now())
 
-  name        String
-  section     String
-  schedule    Json?
+  createdById String @db.Uuid
+  createdBy   User   @relation("CourseCreator", fields: [createdById], references: [id])
 
-  joinCode    String   @unique @default(nanoid(6))
-
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  createdById String   @db.Uuid
-  createdBy   User     @relation("CourseCreator", fields: [createdById], references: [id])
-
-  members     CourseMember[]
+  members            CourseMember[]
+  tasks              Task[]
+  resources          CourseResource[]
+  attendanceSessions AttendanceSession[]
+  calendarEvents     CalendarEvent[]
 }

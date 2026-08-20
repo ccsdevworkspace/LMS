@@ -11,7 +11,7 @@ export default function AppLayout() {
   }, [fetchProfile])
 
   return (
-    <main className="flex flex-col min-h-screen">
+    <main className="flex flex-col h-dvh">
       <TopBar />
       <section className="flex-1 w-full">
         <Outlet />

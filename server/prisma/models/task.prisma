@@ -1,0 +1,33 @@
+enum TaskType {
+  ASSESSMENT
+  ACTIVITY
+  ASSIGNMENT
+}
+
+enum TaskStatus {
+  DRAFT
+  PUBLISHED
+}
+
+model Task {
+  id          String @id @default(cuid())
+  courseId    String
+  course      Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  createdById String @db.Uuid
+  createdBy   User   @relation(fields: [createdById], references: [id])
+
+  type          TaskType
+  title         String
+  totalPoints   Int?
+  instructions  String?
+  attachments   String[]   @default([])
+  deadline      DateTime
+  timeLimit     Int?
+  status        TaskStatus @default(DRAFT)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  submissions Submission[]
+  questions   Question[]
+}

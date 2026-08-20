@@ -29,7 +29,7 @@ export default function Hero({ openModal }) {
               <div>
                 <button 
                   onClick={openModal}
-                  className="bg-btn hover:bg-btn-hover text-fg-inverse font-semibold text-base px-10 py-4 rounded-md transition-colors w-fit cursor-pointer"
+                  className="bg-btn hover:bg-btn-hover text-fg-inverse dark:text-fg font-semibold text-base px-10 py-4 rounded-md transition-colors w-fit cursor-pointer"
                 >
                   Get Started
                 </button>

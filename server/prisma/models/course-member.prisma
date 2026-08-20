@@ -1,20 +1,12 @@
 model CourseMember {
-  id        String     @id @default(cuid())
+  id       String   @id @default(cuid())
+  joinedAt DateTime @default(now())
 
-  role      MemberRole @default(STUDENT)
-  joinedAt  DateTime   @default(now())
+  courseId String
+  course   Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
 
-  courseId  String
-  course    Course     @relation(fields: [courseId], references: [id], onDelete: Cascade)
-
-  userId    String     @db.Uuid
-  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String @db.Uuid
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([courseId, userId])
-}
-
-enum MemberRole {
-  TEACHER
-  STUDENT
-  ASSISTANT
 }

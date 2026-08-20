@@ -1,0 +1,16 @@
+model CalendarEvent {
+  id          String @id @default(cuid())
+  courseId    String
+  course      Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  createdById String @db.Uuid
+  createdBy   User   @relation(fields: [createdById], references: [id])
+
+  title       String
+  description String?
+  date        DateTime @db.Date
+  startTime   String?
+  endTime     String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}

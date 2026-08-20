@@ -7,6 +7,8 @@ import getterRoute from './routes/getter.route.js';
 import testRoute from './routes/test.route.js';
 import authRoute from './modules/auth/auth.routes.js';
 import userRoute from './modules/user/user.routes.js';
+import courseRoute from './modules/course/course.routes.js';
+import { errorHandler } from './middleware/error.middleware.js';
 
 const server = express();
 const PORT = process.env.PORT || 3000;
@@ -20,6 +22,8 @@ server.use('/', getterRoute);
 server.use('/test', testRoute);
 server.use('/auth', authRoute);
 server.use('/user', userRoute);
+server.use(courseRoute);
+server.use(errorHandler);
 
 server.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);

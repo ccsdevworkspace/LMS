@@ -1,10 +1,21 @@
+enum UserRole {
+  USER
+  ADMIN
+}
+
 model User {
   id        String   @id @db.Uuid
   fullName  String
   avatarUrl String?
+  role      UserRole @default(USER)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  createdCourses Course[]       @relation("CourseCreator")
-  memberships    CourseMember[]
+  createdCourses    Course[]           @relation("CourseCreator")
+  memberships       CourseMember[]
+  tasks             Task[]
+  submissions       Submission[]
+  uploadedResources CourseResource[]
+  attendanceRecords AttendanceRecord[]
+  calendarEvents    CalendarEvent[]
 }

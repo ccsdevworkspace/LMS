@@ -1,0 +1,12 @@
+model CourseResource {
+  id         String   @id @default(cuid())
+  title      String
+  filePath   String
+  fileType   String?
+  fileSize   Int?
+  courseId   String
+  course     Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  uploaderId String   @db.Uuid
+  uploader   User     @relation(fields: [uploaderId], references: [id])
+  createdAt  DateTime @default(now())
+}
