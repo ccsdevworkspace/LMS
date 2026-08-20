@@ -1,0 +1,29 @@
+enum AttendanceStatus {
+  PRESENT
+  ABSENT
+  LATE
+  EXCUSED
+}
+
+model AttendanceSession {
+  id        String             @id @default(cuid())
+  courseId  String
+  course    Course             @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  date      DateTime           @db.Date
+  createdAt DateTime           @default(now())
+  records   AttendanceRecord[]
+
+  @@unique([courseId, date])
+}
+
+model AttendanceRecord {
+  id        String            @id @default(cuid())
+  sessionId String
+  session   AttendanceSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  studentId String            @db.Uuid
+  student   User              @relation(fields: [studentId], references: [id])
+  status    AttendanceStatus  @default(ABSENT)
+  markedAt  DateTime          @default(now())
+
+  @@unique([sessionId, studentId])
+}

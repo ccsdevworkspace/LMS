@@ -1,0 +1,42 @@
+enum SubmissionStatus {
+  SUBMITTED
+  GRADED
+}
+
+enum RecheckStatus {
+  PENDING
+  RESOLVED
+}
+
+model Submission {
+  id        String @id @default(cuid())
+  taskId    String
+  task      Task   @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  studentId String @db.Uuid
+  student   User   @relation(fields: [studentId], references: [id])
+
+  attachments String[]         @default([])
+  status      SubmissionStatus @default(SUBMITTED)
+  score       Int?
+  feedback    String?
+
+  startedAt   DateTime?
+  submittedAt DateTime  @default(now())
+  gradedAt    DateTime?
+
+  answers         Answer[]
+  recheckRequests RecheckRequest[]
+
+  @@unique([taskId, studentId])
+}
+
+model RecheckRequest {
+  id           String     @id @default(cuid())
+  submissionId String
+  submission   Submission @relation(fields: [submissionId], references: [id], onDelete: Cascade)
+
+  reason      String?
+  status      RecheckStatus @default(PENDING)
+  requestedAt DateTime      @default(now())
+  resolvedAt  DateTime?
+}

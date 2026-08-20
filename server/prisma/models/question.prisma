@@ -1,0 +1,47 @@
+enum QuestionType {
+  MULTIPLE_CHOICE
+  TRUE_FALSE
+  FILL_IN_BLANK
+  ESSAY
+}
+
+model Question {
+  id     String @id @default(cuid())
+  taskId String
+  task   Task   @relation(fields: [taskId], references: [id], onDelete: Cascade)
+
+  type          QuestionType
+  prompt        String
+  points        Int
+  correctAnswer String? // FILL_IN_BLANK only
+  position      Int
+
+  options QuestionOption[]
+  answers Answer[]
+}
+
+model QuestionOption {
+  id         String   @id @default(cuid())
+  questionId String
+  question   Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  text       String
+  isCorrect  Boolean  @default(false)
+
+  answers Answer[]
+}
+
+model Answer {
+  id           String     @id @default(cuid())
+  submissionId String
+  submission   Submission @relation(fields: [submissionId], references: [id], onDelete: Cascade)
+  questionId   String
+  question     Question   @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  selectedOptionId String?
+  selectedOption   QuestionOption? @relation(fields: [selectedOptionId], references: [id])
+  answerText       String?
+
+  earnedPoints Int?
+
+  @@unique([submissionId, questionId])
+}
