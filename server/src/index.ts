@@ -1,4 +1,4 @@
-import 'dotenv/config';
+import './config/env.config.js';
 import express from 'express';
 import helmet from 'helmet';
 import rateLimiter from './config/limiter.config.js';
@@ -8,6 +8,7 @@ import testRoute from './routes/test.route.js';
 import authRoute from './modules/auth/auth.routes.js';
 import userRoute from './modules/user/user.routes.js';
 import courseRoute from './modules/course/course.routes.js';
+import liveClassRoute from './modules/live-class/live-class.routes.js';
 import { errorHandler } from './middleware/error.middleware.js';
 
 const server = express();
@@ -23,6 +24,7 @@ server.use('/test', testRoute);
 server.use('/auth', authRoute);
 server.use('/user', userRoute);
 server.use(courseRoute);
+server.use(liveClassRoute);
 server.use(errorHandler);
 
 server.listen(PORT, () => {

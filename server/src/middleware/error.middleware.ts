@@ -4,9 +4,19 @@ export function errorHandler(
     err: unknown,
     _req: Request,
     res: Response,
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     _next: NextFunction,
 ) {
-    const { name, code } = err as { name?: string; code?: string };
+    const { name, code, status, message } = err as {
+        name?: string;
+        code?: string;
+        status?: number;
+        message?: string;
+    };
+
+    if (typeof status === 'number' && status >= 400 && status < 600) {
+        return res.status(status).json({ error: message || 'Error occurred' });
+    }
 
     if (name === 'ZodError') {
         return res.status(400).json({ error: 'Validation failed' });

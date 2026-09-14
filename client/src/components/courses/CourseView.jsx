@@ -8,6 +8,7 @@ import EmptyState from '../app/EmptyState'
 import { BookX,  ArrowRight, ChevronLeft,  Trash2,  LogOut, ClipboardList, ChevronRight, MessageSquare, Folder } from 'lucide-react'
 import SuccessScreen from './SuccessScreen'
 import ConfirmAction from './ConfirmAction'
+import { getLiveClassStatus } from '../../api/liveClass'
 
 export default function CourseView() {
   const { id } = useParams()
@@ -15,11 +16,14 @@ export default function CourseView() {
   const profile = useUserStore((s) => s.profile)
   const navigate = useNavigate()
   const [goneCourse, setGoneCourse] = useState(null)
+  const [isLive, setIsLive] = useState(false)
 
   useEffect(() => {
     const getCourseById = async () => {
       try {
         await getCourse(id)
+        const status = await getLiveClassStatus(id)
+        setIsLive(status?.active || false)
       } catch (error) {
         console.error(error)
       }
@@ -120,17 +124,32 @@ export default function CourseView() {
 
       <section className="flex flex-col-reverse sm:flex-row justify-between items-center sm:items-stretch bg-card border border-border rounded-2xl p-8 sm:p-10 shadow-sm gap-8">
         <div className="flex flex-col items-center sm:items-start text-center sm:text-left justify-center max-w-sm">
-          <p className="text-sm font-semibold text-fg-muted mb-2">Today's Classroom</p>
+          <div className="flex items-center gap-2 mb-2">
+            <p className="text-sm font-semibold text-fg-muted">Today's Classroom</p>
+            {isLive && (
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                <span className="relative flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                </span>
+                LIVE NOW
+              </span>
+            )}
+          </div>
           <h2 className="text-3xl font-bold text-fg mb-3">Live Classroom</h2>
           <p className="text-sm text-fg-subtle mb-8 leading-relaxed">
-            {isTeacher 
-              ? "Start a live class whenever you're ready."
-              : "Access your live classes from here."}
+            {isLive
+              ? (isTeacher ? "Your live class is currently in progress." : "Class is ongoing! Click below to enter.")
+              : (isTeacher 
+                ? "Start a live class whenever you're ready."
+                : "Access your live classes from here.")}
           </p>
           
           <Link to={`/courses/${currentCourse.id}/video`}
           className="bg-primary-600 active:scale-95 text-fg-inverse dark:text-fg px-6 py-3 rounded-xl text-sm font-bold shadow-sm transition-all cursor-pointer hover:bg-btn-hover">
-            {isTeacher ? "Create Live Class" : "Join Live Class"}
+            {isLive
+              ? (isTeacher ? "Resume Live Class" : "Join Ongoing Class")
+              : (isTeacher ? "Create Live Class" : "Join Live Class")}
           </Link>
         </div>
         

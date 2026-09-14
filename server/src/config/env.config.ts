@@ -1,7 +1,12 @@
 import dotenv from 'dotenv';
 
 dotenv.config({
-    path: `.env.${process.env.NODE_ENV || 'development'}.local`,
+    path: [
+        `.env.${process.env.NODE_ENV || 'development'}.local`,
+        '.env.development.local',
+        '.env.local',
+        '.env',
+    ],
 });
 
 export const env = {
@@ -13,4 +18,6 @@ export const env = {
     databaseUrl: process.env.DATABASE_URL!,
     directUrl: process.env.DIRECT_URL!,
     isProduction: process.env.NODE_ENV === 'production',
+    streamApiKey: process.env.STREAM_API_KEY || '',
+    streamApiSecret: process.env.STREAM_API_SECRET || '',
 };

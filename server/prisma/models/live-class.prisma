@@ -1,0 +1,18 @@
+enum LiveClassStatus {
+  ACTIVE
+  ENDED
+}
+
+model LiveClass {
+  id        String          @id @default(cuid())
+  courseId  String
+  course    Course          @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  callId    String          @unique
+  hostId    String          @db.Uuid
+  host      User            @relation(fields: [hostId], references: [id])
+  status    LiveClassStatus @default(ACTIVE)
+  startedAt DateTime        @default(now())
+  endedAt   DateTime?
+
+  @@index([courseId, status])
+}

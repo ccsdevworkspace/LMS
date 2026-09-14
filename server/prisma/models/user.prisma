@@ -18,4 +18,5 @@ model User {
   uploadedResources CourseResource[]
   attendanceRecords AttendanceRecord[]
   calendarEvents    CalendarEvent[]
+  hostedLiveClasses LiveClass[]
 }
