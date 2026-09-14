@@ -6,6 +6,7 @@ import Dashboard from './pages/Dashboard'
 import Courses from './pages/Courses'
 import CourseView from './components/courses/CourseView'
 import CourseLayout from './layouts/CourseLayout'
+import LiveClassPage from './pages/LiveClassPage'
 import Todo from './pages/Todo'
 import Calendar from './pages/Calendar'
 import Chat from './pages/Chat'
@@ -31,6 +32,7 @@ export default createBrowserRouter([
         element: <CourseLayout/>,
         children: [
           { path:'courses/:id', element: <CourseView/> },
+          { path:'courses/:id/video', element: <LiveClassPage/> },
         ],
       },
     ],

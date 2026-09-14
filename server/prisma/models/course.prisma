@@ -16,4 +16,5 @@ model Course {
   resources          CourseResource[]
   attendanceSessions AttendanceSession[]
   calendarEvents     CalendarEvent[]
+  liveClasses        LiveClass[]
 }
