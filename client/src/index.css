@@ -170,3 +170,39 @@ input[type="time"]::-webkit-datetime-edit-ampm-field {
   color: inherit !important;
   -webkit-text-fill-color: inherit !important;
 }
+
+/* Google Meet live-class tile overrides */
+.gm-participant-tile .str-video__participant-view {
+  aspect-ratio: auto !important;
+  width: 100% !important;
+  height: 100% !important;
+  max-width: none !important;
+  max-height: none !important;
+  border-radius: inherit !important;
+}
+
+.gm-participant-tile .str-video__video-placeholder {
+  aspect-ratio: auto !important;
+  height: 100% !important;
+  width: 100% !important;
+}
+
+.gm-participant-tile .str-video__video {
+  object-fit: cover !important;
+  width: 100% !important;
+  height: 100% !important;
+  border-radius: inherit !important;
+}
+
+.gm-screenshare-tile .str-video__video {
+  object-fit: contain !important;
+  background-color: #000000 !important;
+}
+
+.gm-screenshare-tile .str-video__participant-view {
+  aspect-ratio: auto !important;
+  width: 100% !important;
+  height: 100% !important;
+  max-width: none !important;
+  max-height: none !important;
+}

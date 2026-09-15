@@ -1,12 +1,15 @@
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useMemo } from 'react';
 import {
   StreamCall,
   StreamTheme,
-  SpeakerLayout,
-  PaginatedGridLayout,
+  ParticipantView,
+  ParticipantsAudio,
   useCall,
   useCallStateHooks,
   CallingState,
+  hasScreenShare,
+  hasAudio,
+  hasVideo,
 } from '@stream-io/video-react-sdk';
 import '@stream-io/video-react-sdk/dist/css/styles.css';
 import {
@@ -18,7 +21,6 @@ import {
   PhoneOff,
   Users,
   MessageSquare,
-  LayoutGrid,
   Clock,
   Shield,
   Send,
@@ -27,14 +29,324 @@ import {
 } from 'lucide-react';
 import { endLiveClass } from '../../api/liveClass';
 
+function GoogleMeetCard({ participant, course, compact = false }) {
+  if (!participant) return null;
+
+  const isSpeaking = participant.isSpeaking;
+  const isVideoMuted = !hasVideo(participant);
+  const isAudioMuted = !hasAudio(participant);
+  const isHost = participant.userId === course.createdById;
+  const isLocal = participant.isLocalParticipant;
+
+  return (
+    <div
+      className={`relative w-full h-full min-h-0 min-w-0 rounded-2xl sm:rounded-3xl overflow-hidden bg-[#1e1f20] border transition-all duration-200 flex items-center justify-center select-none shadow-md gm-participant-tile ${
+        isSpeaking
+          ? 'border-emerald-400/90 ring-2 ring-emerald-500/50 shadow-[0_0_15px_rgba(16,185,129,0.25)]'
+          : 'border-neutral-800/80'
+      }`}
+    >
+      {/* Video or Avatar */}
+      {isVideoMuted ? (
+        <div className="w-full h-full flex items-center justify-center bg-[#1e1f20] relative">
+          <div
+            className={`relative flex items-center justify-center rounded-full transition-all duration-300 ${
+              isSpeaking ? 'ring-4 ring-emerald-400/40 scale-105' : ''
+            }`}
+          >
+            {participant.image ? (
+              <img
+                src={participant.image}
+                alt={participant.name || 'Participant'}
+                className={`${
+                  compact ? 'w-12 h-12' : 'w-18 h-18 sm:w-24 sm:h-24'
+                } rounded-full object-cover border-2 border-white/10 shadow-xl`}
+              />
+            ) : (
+              <div
+                className={`${
+                  compact
+                    ? 'w-12 h-12 text-lg'
+                    : 'w-18 h-18 sm:w-24 sm:h-24 text-2xl sm:text-3xl'
+                } rounded-full bg-linear-to-br from-primary-600 to-teal-800 text-white font-bold flex items-center justify-center shadow-xl border-2 border-white/10`}
+              >
+                {(participant.name || participant.userId || 'U')
+                  .charAt(0)
+                  .toUpperCase()}
+              </div>
+            )}
+          </div>
+        </div>
+      ) : (
+        <ParticipantView
+          participant={participant}
+          muteAudio={true}
+          mirror={isLocal}
+          ParticipantViewUI={null}
+          className="w-full h-full aspect-auto!"
+        />
+      )}
+
+      {/* Bottom-left Glassmorphism Pill: Name, Role, Mic */}
+      <div className="absolute bottom-2 left-2 z-10 bg-black/65 backdrop-blur-md px-2.5 py-1 rounded-full text-white flex items-center gap-1.5 shadow-sm max-w-[90%] pointer-events-none">
+        {/* Mic Status */}
+        {isAudioMuted ? (
+          <div className="w-4 h-4 rounded-full bg-red-500/20 flex items-center justify-center shrink-0">
+            <MicOff size={11} className="text-red-400" />
+          </div>
+        ) : (
+          <div className="w-4 h-4 rounded-full bg-emerald-500/20 flex items-center justify-center shrink-0">
+            <Mic size={11} className="text-emerald-400" />
+          </div>
+        )}
+
+        {/* Participant Name */}
+        <span className="truncate font-medium text-[11px] sm:text-xs text-neutral-200">
+          {participant.name || participant.userId}
+          {isLocal && ' (You)'}
+        </span>
+
+        {/* Host Badge */}
+        {isHost && (
+          <span className="text-[9px] bg-primary-600/50 text-primary-300 font-bold px-1.5 py-0.5 rounded-full shrink-0 flex items-center gap-0.5">
+            <Shield size={9} /> Host
+          </span>
+        )}
+      </div>
+
+      {/* Speaking subtle badge on top-right if speaking */}
+      {isSpeaking && (
+        <div className="absolute top-2 right-2 z-10 bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 px-2 py-0.5 rounded-full text-[10px] font-semibold flex items-center gap-1 pointer-events-none">
+          <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
+          Speaking
+        </div>
+      )}
+    </div>
+  );
+}
+
+function GoogleMeetLayout({ course, call }) {
+  const { useParticipants } = useCallStateHooks();
+  const participants = useParticipants();
+  const [showSelfPreview, setShowSelfPreview] = useState(false);
+
+  // Check if anyone is screen sharing
+  const screenSharingParticipant = participants.find((p) => hasScreenShare(p));
+  const isLocalPresenter = screenSharingParticipant?.isLocalParticipant;
+
+  const handleStopSharing = async () => {
+    try {
+      if (call?.screenShare) {
+        await call.screenShare.disable();
+      }
+    } catch (err) {
+      console.error('Error stopping screen share:', err);
+    }
+  };
+
+  // Sort participants: Host/Instructor first, then active speakers, then others
+  const sortedParticipants = useMemo(() => {
+    const list = [...participants];
+    list.sort((a, b) => {
+      const isAHost = a.userId === course.createdById;
+      const isBHost = b.userId === course.createdById;
+      if (isAHost && !isBHost) return -1;
+      if (!isAHost && isBHost) return 1;
+      if (a.isDominantSpeaker && !b.isDominantSpeaker) return -1;
+      if (!a.isDominantSpeaker && b.isDominantSpeaker) return 1;
+      return 0;
+    });
+    return list;
+  }, [participants, course.createdById]);
+
+  // If someone is screen sharing: Spotlight view
+  if (screenSharingParticipant) {
+    const otherParticipants = participants.filter(
+      (p) => p.sessionId !== screenSharingParticipant.sessionId
+    );
+
+    return (
+      <div className="h-full w-full flex flex-col md:flex-row overflow-hidden gap-2">
+        {/* Screen Share Stage */}
+        <div className="flex-1 h-[62%] sm:h-[66%] md:h-full w-full min-h-0 relative p-1">
+          {isLocalPresenter && !showSelfPreview ? (
+            /* Google Meet Presenter Card (Prevents infinite mirror loop and echo) */
+            <div className="w-full h-full relative rounded-2xl sm:rounded-3xl overflow-hidden bg-[#1e1f20] border border-neutral-800 p-6 flex flex-col items-center justify-center text-center shadow-xl">
+              <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-primary-600/20 text-primary-400 border border-primary-500/30 flex items-center justify-center mb-4 shadow-inner">
+                <ScreenShare size={32} className="sm:w-10 sm:h-10 text-primary-400" />
+              </div>
+
+              <h3 className="text-lg sm:text-xl font-bold text-white mb-1.5">
+                You're presenting to everyone
+              </h3>
+              <p className="text-xs sm:text-sm text-neutral-400 max-w-sm mb-6 leading-relaxed">
+                To prevent an infinite mirror loop and audio echo, your screen feed is hidden here. Everyone else in the live class can see your presentation.
+              </p>
+
+              <div className="flex items-center gap-3">
+                <button
+                  type="button"
+                  onClick={handleStopSharing}
+                  className="bg-red-600 hover:bg-red-700 text-white font-semibold text-xs sm:text-sm px-5 py-2.5 rounded-full shadow-lg transition-all active:scale-95 cursor-pointer flex items-center gap-2"
+                >
+                  <PhoneOff size={15} />
+                  Stop presenting
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setShowSelfPreview(true)}
+                  className="bg-neutral-800 hover:bg-neutral-700 text-neutral-300 font-medium text-xs sm:text-sm px-4 py-2.5 rounded-full border border-neutral-700 transition-all active:scale-95 cursor-pointer"
+                >
+                  View presentation
+                </button>
+              </div>
+            </div>
+          ) : (
+            /* Standard Screen Share View (For viewers or presenter with preview enabled) */
+            <div className="w-full h-full relative rounded-2xl sm:rounded-3xl overflow-hidden bg-neutral-900 border border-neutral-800 shadow-xl flex items-center justify-center gm-screenshare-tile">
+              <ParticipantView
+                participant={screenSharingParticipant}
+                trackType="screenShareTrack"
+                muteAudio={true}
+                ParticipantViewUI={null}
+                className="w-full h-full"
+              />
+              <div className="absolute top-3 left-3 right-3 z-10 flex items-center justify-between pointer-events-auto">
+                <div className="bg-black/75 backdrop-blur-md px-3 py-1.5 rounded-full text-xs font-semibold text-white flex items-center gap-1.5 shadow">
+                  <ScreenShare size={14} className="text-primary-400" />
+                  <span>
+                    {isLocalPresenter
+                      ? 'Your Screen (Preview)'
+                      : `${screenSharingParticipant.name || 'User'}'s Screen`}
+                  </span>
+                </div>
+                {isLocalPresenter && (
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setShowSelfPreview(false)}
+                      className="bg-black/75 backdrop-blur-md hover:bg-neutral-800 text-neutral-300 hover:text-white px-3 py-1.5 rounded-full text-xs font-medium border border-neutral-700 transition-colors cursor-pointer"
+                    >
+                      Hide preview
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleStopSharing}
+                      className="bg-red-600 hover:bg-red-700 text-white px-3 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer"
+                    >
+                      Stop presenting
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Other participants thumbnail strip */}
+        <div className="h-[38%] sm:h-[34%] md:h-full w-full md:w-60 lg:w-72 flex md:flex-col gap-2 overflow-x-auto md:overflow-y-auto p-1 scrollbar-none shrink-0">
+          {!isLocalPresenter && (
+            <div className="w-48 sm:w-56 md:w-full h-full md:h-40 shrink-0">
+              <GoogleMeetCard participant={screenSharingParticipant} course={course} compact />
+            </div>
+          )}
+          {otherParticipants.map((p) => (
+            <div key={p.sessionId} className="w-48 sm:w-56 md:w-full h-full md:h-40 shrink-0">
+              <GoogleMeetCard participant={p} course={course} compact />
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  // Standard Video Call Grids (Google Meet style)
+  const count = sortedParticipants.length;
+
+  if (count <= 1) {
+    return (
+      <div className="w-full h-full flex items-center justify-center p-2 sm:p-4">
+        <div className="w-full h-full max-w-4xl max-h-full">
+          <GoogleMeetCard participant={sortedParticipants[0]} course={course} />
+        </div>
+      </div>
+    );
+  }
+
+  if (count === 2) {
+    return (
+      <div className="grid grid-cols-1 md:grid-cols-2 grid-rows-2 md:grid-rows-1 gap-2 sm:gap-4 h-full w-full p-1.5 sm:p-3">
+        {sortedParticipants.map((p) => (
+          <div key={p.sessionId} className="w-full h-full min-h-0 min-w-0">
+            <GoogleMeetCard participant={p} course={course} />
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  if (count === 3) {
+    return (
+      <div className="grid grid-cols-2 grid-rows-2 md:grid-cols-3 md:grid-rows-1 gap-2 sm:gap-3 h-full w-full p-1.5 sm:p-3">
+        {/* On mobile: first participant (instructor) takes top half */}
+        {/* On desktop: all 3 take equal columns */}
+        <div className="col-span-2 md:col-span-1 row-span-1 w-full h-full min-h-0 min-w-0">
+          <GoogleMeetCard participant={sortedParticipants[0]} course={course} />
+        </div>
+        <div className="col-span-1 row-span-1 w-full h-full min-h-0 min-w-0">
+          <GoogleMeetCard participant={sortedParticipants[1]} course={course} />
+        </div>
+        <div className="col-span-1 row-span-1 w-full h-full min-h-0 min-w-0">
+          <GoogleMeetCard participant={sortedParticipants[2]} course={course} />
+        </div>
+      </div>
+    );
+  }
+
+  if (count === 4) {
+    return (
+      <div className="grid grid-cols-2 grid-rows-2 gap-2 sm:gap-3 h-full w-full p-1.5 sm:p-3">
+        {sortedParticipants.map((p) => (
+          <div key={p.sessionId} className="w-full h-full min-h-0 min-w-0">
+            <GoogleMeetCard participant={p} course={course} />
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  if (count === 5 || count === 6) {
+    return (
+      <div className="grid grid-cols-2 md:grid-cols-3 grid-rows-3 md:grid-rows-2 gap-2 sm:gap-3 h-full w-full p-1.5 sm:p-3">
+        {sortedParticipants.map((p) => (
+          <div key={p.sessionId} className="w-full h-full min-h-0 min-w-0">
+            <GoogleMeetCard participant={p} course={course} />
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  // > 6 participants
+  return (
+    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 sm:gap-3 overflow-y-auto max-h-full h-full w-full p-1.5 sm:p-3">
+      {sortedParticipants.map((p) => (
+        <div key={p.sessionId} className="aspect-4/3 min-h-36 sm:min-h-48 w-full">
+          <GoogleMeetCard participant={p} course={course} />
+        </div>
+      ))}
+    </div>
+  );
+}
+
 function MeetingControls({
   course,
   isOwner,
   onLeave,
-  layout,
-  setLayout,
   activePanel,
   setActivePanel,
+  unreadCount = 0,
 }) {
   const call = useCall();
   const {
@@ -73,6 +385,9 @@ function MeetingControls({
       await screenShare.toggle();
     } catch (err) {
       console.error('Error toggling screen share:', err);
+      if (err.name !== 'NotAllowedError') {
+        alert(err?.message || 'Screen sharing is not supported or was denied.');
+      }
     }
   };
 
@@ -107,103 +422,107 @@ function MeetingControls({
 
   return (
     <>
-      {/* Google Meet Style Bottom Control Bar */}
-      <nav className="h-20 bg-neutral-900/95 backdrop-blur border-t border-neutral-800 px-4 sm:px-8 flex items-center justify-between z-30 select-none">
-        {/* Left Section: Time & Info */}
-        <div className="hidden md:flex items-center gap-3 min-w-50">
-          <span className="text-sm font-semibold text-neutral-300 truncate max-w-45">
+      {/* Bottom Control Bar */}
+      <nav className="h-16 sm:h-20 bg-neutral-900/95 backdrop-blur border-t border-neutral-800 px-3 sm:px-6 flex items-center justify-between z-30 select-none shrink-0 pb-[env(safe-area-inset-bottom,0px)]">
+        {/* Left Section: Course Info (Desktop only) */}
+        <div className="hidden md:flex items-center gap-3 min-w-44">
+          <span className="text-sm font-semibold text-neutral-300 truncate max-w-44">
             {course.name}
           </span>
-          <span className="text-xs text-neutral-500 font-mono">
+          <span className="text-xs text-neutral-500 font-mono shrink-0">
             {course.section || 'Live Class'}
           </span>
         </div>
 
         {/* Center Section: Core Media & Interaction Buttons */}
-        <div className="flex items-center gap-2 sm:gap-3 mx-auto">
+        <div className="flex items-center justify-center gap-2 sm:gap-3 w-full md:w-auto mx-auto">
           {/* Microphone Button */}
           <button
             type="button"
             onClick={toggleMicrophone}
-            className={`p-3.5 rounded-full transition-all duration-200 cursor-pointer active:scale-95 shadow-md flex items-center justify-center ${
+            className={`p-3 sm:p-3.5 rounded-full transition-all duration-200 cursor-pointer active:scale-95 shadow-md flex items-center justify-center ${
               !isMicMuted
                 ? 'bg-neutral-800 hover:bg-neutral-700 text-white border border-neutral-700'
                 : 'bg-red-500 hover:bg-red-600 text-white'
             }`}
             title={!isMicMuted ? 'Turn off microphone' : 'Turn on microphone'}
           >
-            {!isMicMuted ? <Mic size={20} /> : <MicOff size={20} />}
+            {!isMicMuted ? <Mic size={19} /> : <MicOff size={19} />}
           </button>
 
           {/* Camera Button */}
           <button
             type="button"
             onClick={toggleCamera}
-            className={`p-3.5 rounded-full transition-all duration-200 cursor-pointer active:scale-95 shadow-md flex items-center justify-center ${
+            className={`p-3 sm:p-3.5 rounded-full transition-all duration-200 cursor-pointer active:scale-95 shadow-md flex items-center justify-center ${
               !isCamMuted
                 ? 'bg-neutral-800 hover:bg-neutral-700 text-white border border-neutral-700'
                 : 'bg-red-500 hover:bg-red-600 text-white'
             }`}
             title={!isCamMuted ? 'Turn off camera' : 'Turn on camera'}
           >
-            {!isCamMuted ? <VideoIcon size={20} /> : <VideoOff size={20} />}
+            {!isCamMuted ? <VideoIcon size={19} /> : <VideoOff size={19} />}
           </button>
 
-          {/* Screen Share Button */}
+          {/* Screen Share Button (Available on mobile & desktop) */}
           <button
             type="button"
             onClick={toggleScreenShare}
-            className={`p-3.5 rounded-full transition-all duration-200 cursor-pointer active:scale-95 shadow-md hidden sm:flex items-center justify-center ${
+            className={`p-3 sm:p-3.5 rounded-full transition-all duration-200 cursor-pointer active:scale-95 shadow-md flex items-center justify-center ${
               !isScreenShareDisabled
                 ? 'bg-primary-600 text-white shadow-[0_0_12px_rgba(15,107,104,0.6)]'
                 : 'bg-neutral-800 hover:bg-neutral-700 text-white border border-neutral-700'
             }`}
-            title={!isScreenShareDisabled ? 'Stop sharing screen' : 'Share entire screen'}
+            title={!isScreenShareDisabled ? 'Stop sharing screen' : 'Share screen'}
           >
-            <ScreenShare size={20} />
+            <ScreenShare size={19} />
           </button>
 
-          {/* Layout Switcher */}
+          {/* Chat Button (Available on mobile & desktop) */}
           <button
             type="button"
-            onClick={() => setLayout(layout === 'speaker' ? 'grid' : 'speaker')}
-            className={`p-3.5 rounded-full transition-all duration-200 cursor-pointer active:scale-95 hidden sm:flex items-center justify-center ${
-              layout === 'grid'
+            onClick={() => setActivePanel(activePanel === 'chat' ? null : 'chat')}
+            className={`p-3 sm:p-3.5 rounded-full transition-all duration-200 cursor-pointer active:scale-95 shadow-md relative flex items-center justify-center ${
+              activePanel === 'chat'
                 ? 'bg-primary-600 text-white'
-                : 'bg-neutral-800 hover:bg-neutral-700 text-neutral-300 border border-neutral-700'
+                : 'bg-neutral-800 hover:bg-neutral-700 text-white border border-neutral-700'
             }`}
-            title={layout === 'speaker' ? 'Switch to Grid view' : 'Switch to Speaker view'}
+            title="In-call chat"
           >
-            <LayoutGrid size={20} />
+            <MessageSquare size={19} />
+            {unreadCount > 0 && activePanel !== 'chat' && (
+              <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center">
+                {unreadCount > 9 ? '9+' : unreadCount}
+              </span>
+            )}
           </button>
 
-          {/* Leave / End Call Button (Google Meet Red Pill) */}
+          {/* Leave / End Call Button */}
           {isOwner ? (
             <button
               type="button"
               onClick={() => setShowEndModal(true)}
-              className="bg-red-500 hover:bg-red-600 text-white px-5 py-3 rounded-full font-bold text-sm flex items-center gap-2 shadow-lg transition-all cursor-pointer active:scale-95 ml-2"
+              className="bg-red-600 hover:bg-red-700 text-white px-4 sm:px-5 py-2.5 sm:py-3 rounded-full font-bold text-sm flex items-center gap-2 shadow-lg transition-all cursor-pointer active:scale-95 ml-1"
               title="End class or leave"
             >
-              <PhoneOff size={18} />
+              <PhoneOff size={17} />
               <span className="hidden sm:inline">Leave</span>
             </button>
           ) : (
             <button
               type="button"
               onClick={handleLeaveJustMe}
-              className="bg-red-500 hover:bg-red-600 text-white px-5 py-3 rounded-full font-bold text-sm flex items-center gap-2 shadow-lg transition-all cursor-pointer active:scale-95 ml-2"
+              className="bg-red-600 hover:bg-red-700 text-white px-4 sm:px-5 py-2.5 sm:py-3 rounded-full font-bold text-sm flex items-center gap-2 shadow-lg transition-all cursor-pointer active:scale-95 ml-1"
               title="Leave call"
             >
-              <PhoneOff size={18} />
+              <PhoneOff size={17} />
               <span className="hidden sm:inline">Leave</span>
             </button>
           )}
         </div>
 
-        {/* Right Section: Drawers & Utility */}
-        <div className="flex items-center gap-2 min-w-50 justify-end">
-          {/* Participants Toggle */}
+        {/* Right Section: Participants Drawer (Desktop) */}
+        <div className="hidden md:flex items-center gap-2 min-w-44 justify-end">
           <button
             type="button"
             onClick={() => setActivePanel(activePanel === 'participants' ? null : 'participants')}
@@ -219,26 +538,12 @@ function MeetingControls({
               {participants.length}
             </span>
           </button>
-
-          {/* In-Call Chat Toggle */}
-          <button
-            type="button"
-            onClick={() => setActivePanel(activePanel === 'chat' ? null : 'chat')}
-            className={`p-3 rounded-full transition-all cursor-pointer ${
-              activePanel === 'chat'
-                ? 'bg-primary-600 text-white'
-                : 'text-neutral-300 hover:bg-neutral-800'
-            }`}
-            title="Meeting Chat"
-          >
-            <MessageSquare size={19} />
-          </button>
         </div>
       </nav>
 
       {/* Instructor End Class Options Modal */}
       {showEndModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-sm p-4">
           <div className="bg-neutral-900 border border-neutral-800 text-white rounded-3xl max-w-md w-full p-6 shadow-2xl flex flex-col gap-5">
             <div className="flex items-start gap-4">
               <div className="p-3 bg-red-500/10 text-red-400 rounded-2xl shrink-0">
@@ -273,7 +578,7 @@ function MeetingControls({
               <button
                 type="button"
                 onClick={() => setShowEndModal(false)}
-                className="w-full py-2 text-xs font-semibold text-neutral-400 hover:text-neutral-200 transition-colors"
+                className="w-full py-2 text-xs font-semibold text-neutral-400 hover:text-neutral-200 transition-colors cursor-pointer"
               >
                 Cancel
               </button>
@@ -339,9 +644,6 @@ function MeetingSidePanel({ activePanel, onClose, course, isOwner }) {
 
     try {
       await call.sendCustomEvent(messagePayload);
-      // NOTE: Do NOT manually push to chatMessages here.
-      // sendCustomEvent fires the 'custom' event for all participants including
-      // the sender, so the listener above already handles adding it.
       setInputMessage('');
     } catch (err) {
       console.error('Failed to send message:', err);
@@ -351,122 +653,148 @@ function MeetingSidePanel({ activePanel, onClose, course, isOwner }) {
   if (!activePanel) return null;
 
   return (
-    <aside className="w-full sm:w-80 md:w-96 bg-neutral-900 border-l border-neutral-800 flex flex-col h-full z-20 transition-all duration-300">
-      {/* Panel Header */}
-      <div className="p-4 border-b border-neutral-800 flex items-center justify-between">
-        <h3 className="text-sm font-bold text-neutral-200">
-          {activePanel === 'participants' ? `Participants (${participants.length})` : 'In-call Messages'}
-        </h3>
-        <button
-          type="button"
-          onClick={onClose}
-          className="p-1.5 rounded-lg text-neutral-400 hover:text-white hover:bg-neutral-800 transition-colors cursor-pointer"
-        >
-          <X size={18} />
-        </button>
-      </div>
+    <>
+      {/* Mobile Backdrop Overlay */}
+      <div
+        className="md:hidden fixed inset-0 bg-black/60 backdrop-blur-xs z-40 transition-opacity"
+        onClick={onClose}
+      />
 
-      {/* Panel Body */}
-      {activePanel === 'participants' ? (
-        <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-2">
-          {participants.map((p) => {
-            const isCallHost = p.userId === course.createdById;
-            return (
-              <div
-                key={p.sessionId}
-                className="flex items-center justify-between p-2.5 rounded-xl bg-neutral-800/40 border border-neutral-800"
-              >
-                <div className="flex items-center gap-3 min-w-0">
-                  <div className="w-8 h-8 rounded-full bg-primary-600 text-white flex items-center justify-center text-xs font-bold shrink-0">
-                    {p.image ? (
-                      <img src={p.image} alt={p.name} className="w-full h-full rounded-full object-cover" />
+      {/* Side Panel on Desktop / Bottom Sheet on Mobile */}
+      <aside className="fixed inset-x-0 bottom-0 z-50 h-[82dvh] max-h-[82dvh] rounded-t-3xl md:static md:inset-auto md:h-full md:max-h-none md:w-80 lg:w-96 bg-neutral-900 border-t md:border-t-0 md:border-l border-neutral-800 flex flex-col shadow-2xl transition-all duration-300">
+        {/* Mobile Drag Indicator */}
+        <div className="md:hidden w-12 h-1.5 bg-neutral-700 rounded-full mx-auto my-2.5 shrink-0" />
+
+        {/* Panel Header */}
+        <div className="px-4 py-3 border-b border-neutral-800 flex items-center justify-between shrink-0">
+          <h3 className="text-sm font-bold text-neutral-200">
+            {activePanel === 'participants'
+              ? `Participants (${participants.length})`
+              : 'In-call Messages'}
+          </h3>
+          <button
+            type="button"
+            onClick={onClose}
+            className="p-1.5 rounded-lg text-neutral-400 hover:text-white hover:bg-neutral-800 transition-colors cursor-pointer"
+          >
+            <X size={18} />
+          </button>
+        </div>
+
+        {/* Panel Body */}
+        {activePanel === 'participants' ? (
+          <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-2 min-h-0">
+            {participants.map((p) => {
+              const isCallHost = p.userId === course.createdById;
+              const isParticipantAudioMuted = !hasAudio(p);
+              const isParticipantVideoMuted = !hasVideo(p);
+
+              return (
+                <div
+                  key={p.sessionId}
+                  className="flex items-center justify-between p-2.5 rounded-xl bg-neutral-800/50 border border-neutral-800"
+                >
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="w-8 h-8 rounded-full bg-primary-600 text-white flex items-center justify-center text-xs font-bold shrink-0">
+                      {p.image ? (
+                        <img
+                          src={p.image}
+                          alt={p.name}
+                          className="w-full h-full rounded-full object-cover"
+                        />
+                      ) : (
+                        (p.name || 'U').charAt(0).toUpperCase()
+                      )}
+                    </div>
+                    <div className="flex flex-col min-w-0">
+                      <span className="text-sm font-semibold text-neutral-200 truncate">
+                        {p.name || p.userId}
+                        {p.isLocalParticipant && ' (You)'}
+                      </span>
+                      {isCallHost && (
+                        <span className="text-[10px] text-primary-400 font-bold flex items-center gap-1">
+                          <Shield size={10} /> Instructor / Host
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2 text-neutral-400 shrink-0">
+                    {isParticipantAudioMuted ? (
+                      <MicOff size={16} className="text-red-400" />
                     ) : (
-                      (p.name || 'U').charAt(0).toUpperCase()
+                      <Mic size={16} className="text-emerald-400" />
                     )}
-                  </div>
-                  <div className="flex flex-col min-w-0">
-                    <span className="text-sm font-semibold text-neutral-200 truncate">
-                      {p.name || p.userId}
-                    </span>
-                    {isCallHost && (
-                      <span className="text-[10px] text-primary-400 font-bold flex items-center gap-1">
-                        <Shield size={10} /> Instructor / Host
-                      </span>
-                    )}
+                    {isParticipantVideoMuted && <VideoOff size={16} className="text-neutral-500" />}
                   </div>
                 </div>
-
-                <div className="flex items-center gap-2 text-neutral-400">
-                  {p.isAudioMuted ? (
-                    <MicOff size={16} className="text-red-400" />
-                  ) : (
-                    <Mic size={16} className="text-emerald-400" />
-                  )}
-                  {p.isVideoMuted && <VideoOff size={16} className="text-neutral-500" />}
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      ) : (
-        /* In-Call Chat */
-        <div className="flex-1 flex flex-col min-h-0">
-          <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-3">
-            {chatMessages.length === 0 ? (
-              <div className="flex-1 flex flex-col items-center justify-center text-neutral-500 text-xs text-center p-6">
-                <MessageSquare size={32} className="mb-2 opacity-50" />
-                <p>Messages can only be seen by people in the call and are deleted when the call ends.</p>
-              </div>
-            ) : (
-              chatMessages.map((msg) => (
-                <div key={msg.id} className="flex flex-col gap-1 text-xs">
-                  <div className="flex items-center gap-2">
-                    <span className="font-bold text-neutral-300">{msg.sender}</span>
-                    {msg.isInstructor && (
-                      <span className="bg-primary-600/30 text-primary-400 px-1.5 py-0.2 rounded text-[10px] font-bold">
-                        Host
-                      </span>
-                    )}
-                    <span className="text-[10px] text-neutral-500">{msg.time}</span>
-                  </div>
-                  <div className="bg-neutral-800/80 text-neutral-200 p-2.5 rounded-2xl rounded-tl-none border border-neutral-800/60 leading-relaxed wrap-break-word">
-                    {msg.text}
-                  </div>
-                </div>
-              ))
-            )}
-            <div ref={chatEndRef} />
+              );
+            })}
           </div>
+        ) : (
+          /* In-Call Chat */
+          <div className="flex-1 flex flex-col min-h-0">
+            <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-3 min-h-0">
+              {chatMessages.length === 0 ? (
+                <div className="flex-1 flex flex-col items-center justify-center text-neutral-500 text-xs text-center p-6">
+                  <MessageSquare size={32} className="mb-2 opacity-50 text-neutral-400" />
+                  <p>Messages can only be seen by people in the call and are deleted when the call ends.</p>
+                </div>
+              ) : (
+                chatMessages.map((msg) => (
+                  <div key={msg.id} className="flex flex-col gap-1 text-xs">
+                    <div className="flex items-center gap-2">
+                      <span className="font-bold text-neutral-300">{msg.sender}</span>
+                      {msg.isInstructor && (
+                        <span className="bg-primary-600/30 text-primary-400 px-1.5 py-0.2 rounded text-[10px] font-bold">
+                          Host
+                        </span>
+                      )}
+                      <span className="text-[10px] text-neutral-500">{msg.time}</span>
+                    </div>
+                    <div className="bg-neutral-800/80 text-neutral-200 p-2.5 rounded-2xl rounded-tl-none border border-neutral-800/60 leading-relaxed wrap-break-word">
+                      {msg.text}
+                    </div>
+                  </div>
+                ))
+              )}
+              <div ref={chatEndRef} />
+            </div>
 
-          <form onSubmit={handleSendMessage} className="p-3 border-t border-neutral-800 flex items-center gap-2">
-            <input
-              type="text"
-              value={inputMessage}
-              onChange={(e) => setInputMessage(e.target.value)}
-              placeholder="Send a message to everyone..."
-              className="flex-1 bg-neutral-800 border border-neutral-700 rounded-xl px-3.5 py-2 text-xs text-neutral-200 placeholder-neutral-500 focus:outline-none focus:border-primary-500"
-            />
-            <button
-              type="submit"
-              disabled={!inputMessage.trim()}
-              className="p-2 bg-primary-600 hover:bg-btn-hover text-white rounded-xl disabled:opacity-40 transition-colors cursor-pointer"
+            <form
+              onSubmit={handleSendMessage}
+              className="p-3 border-t border-neutral-800 flex items-center gap-2 shrink-0 bg-neutral-900 pb-[calc(0.75rem+env(safe-area-inset-bottom,0px))]"
             >
-              <Send size={15} />
-            </button>
-          </form>
-        </div>
-      )}
-    </aside>
+              <input
+                type="text"
+                value={inputMessage}
+                onChange={(e) => setInputMessage(e.target.value)}
+                placeholder="Send a message to everyone..."
+                className="flex-1 bg-neutral-800 border border-neutral-700 rounded-xl px-3.5 py-2.5 text-xs text-neutral-200 placeholder-neutral-500 focus:outline-none focus:border-primary-500"
+              />
+              <button
+                type="submit"
+                disabled={!inputMessage.trim()}
+                className="p-2.5 bg-primary-600 hover:bg-btn-hover text-white rounded-xl disabled:opacity-40 transition-colors cursor-pointer shrink-0"
+              >
+                <Send size={15} />
+              </button>
+            </form>
+          </div>
+        )}
+      </aside>
+    </>
   );
 }
 
 function MeetingContainer({ course, isOwner, onLeave }) {
   const call = useCall();
-  const { useCallCallingState } = useCallStateHooks();
+  const { useCallCallingState, useParticipants } = useCallStateHooks();
   const callingState = useCallCallingState();
+  const participants = useParticipants();
 
-  const [layout, setLayout] = useState('speaker'); // 'speaker' or 'grid'
   const [activePanel, setActivePanel] = useState(null); // 'participants' | 'chat' | null
+  const [unreadCount, setUnreadCount] = useState(0);
   const [callDurationSeconds, setCallDurationSeconds] = useState(0);
   const [classEndedNotice, setClassEndedNotice] = useState(false);
 
@@ -477,6 +805,33 @@ function MeetingContainer({ course, isOwner, onLeave }) {
     }, 1000);
     return () => clearInterval(timer);
   }, []);
+
+  const handleTogglePanel = (panel) => {
+    setActivePanel((prev) => {
+      const next = prev === panel ? null : panel;
+      if (next === 'chat') {
+        setUnreadCount(0);
+      }
+      return next;
+    });
+  };
+
+  // Track unread messages if chat panel is closed
+  useEffect(() => {
+    if (!call) return;
+
+    const unsubscribe = call.on('custom', (event) => {
+      if (event.custom?.type === 'chat_message') {
+        if (activePanel !== 'chat') {
+          setUnreadCount((prev) => prev + 1);
+        }
+      }
+    });
+
+    return () => {
+      unsubscribe();
+    };
+  }, [call, activePanel]);
 
   // Listen for call ended event
   useEffect(() => {
@@ -512,49 +867,62 @@ function MeetingContainer({ course, isOwner, onLeave }) {
   };
 
   return (
-    <div className="flex flex-col h-screen w-screen bg-neutral-950 text-white overflow-hidden select-none">
+    <div className="fixed inset-0 h-dvh max-h-dvh w-full bg-neutral-950 text-white overflow-hidden select-none flex flex-col z-40">
       {/* Top Header Bar */}
-      <header className="h-14 bg-neutral-900/80 backdrop-blur border-b border-neutral-800/80 px-4 sm:px-6 flex items-center justify-between z-20">
-        <div className="flex items-center gap-3">
-          <div className="flex items-center gap-2 bg-red-500/10 text-red-400 border border-red-500/20 px-2.5 py-0.5 rounded-full text-xs font-bold">
+      <header className="h-12 sm:h-14 bg-neutral-900/90 backdrop-blur border-b border-neutral-800 px-3 sm:px-6 flex items-center justify-between z-20 shrink-0">
+        <div className="flex items-center gap-2.5 sm:gap-3">
+          <div className="flex items-center gap-1.5 bg-red-500/15 text-red-400 border border-red-500/25 px-2.5 py-0.5 rounded-full text-[11px] sm:text-xs font-bold">
             <span className="relative flex h-2 w-2">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
               <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
             </span>
             LIVE
           </div>
-          <div className="flex items-center gap-2 text-xs font-mono text-neutral-400">
-            <Clock size={13} />
+          <div className="flex items-center gap-1.5 text-xs font-mono text-neutral-300">
+            <Clock size={12} className="text-neutral-400" />
             <span>{formatTimer(callDurationSeconds)}</span>
           </div>
         </div>
 
         <div className="flex items-center gap-2">
-          <span className="text-xs font-bold text-neutral-300 hidden sm:inline">
+          <span className="text-xs font-bold text-neutral-200 hidden sm:inline truncate max-w-44">
             {course.name}
           </span>
-          <span className="text-[11px] font-semibold text-neutral-500 bg-neutral-800 px-2 py-0.5 rounded-full">
+
+          {/* Participants Toggle Pill (Google Meet mobile style) */}
+          <button
+            type="button"
+            onClick={() => handleTogglePanel('participants')}
+            className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold transition-all cursor-pointer ${
+              activePanel === 'participants'
+                ? 'bg-primary-600 text-white'
+                : 'bg-neutral-800 hover:bg-neutral-700 text-neutral-300 border border-neutral-700/60'
+            }`}
+            title="View participants"
+          >
+            <Users size={13} />
+            <span>{participants.length}</span>
+          </button>
+
+          <span className="text-[10px] font-semibold text-neutral-400 bg-neutral-800/80 border border-neutral-700/50 px-2 py-0.5 rounded-full">
             {isOwner ? 'Instructor' : 'Student'}
           </span>
         </div>
       </header>
 
       {/* Main Video Area with side drawer */}
-      <div className="flex-1 flex overflow-hidden relative">
-        <main className="flex-1 h-full w-full overflow-hidden p-3 sm:p-5 flex items-center justify-center bg-neutral-950">
+      <div className="flex-1 flex min-h-0 w-full overflow-hidden relative">
+        <main className="flex-1 h-full w-full overflow-hidden p-1.5 sm:p-3 flex items-center justify-center bg-neutral-950">
           <StreamTheme className="h-full w-full">
-            {layout === 'speaker' ? (
-              <SpeakerLayout participantsBarPosition="bottom" />
-            ) : (
-              <PaginatedGridLayout />
-            )}
+            <ParticipantsAudio participants={participants} />
+            <GoogleMeetLayout course={course} call={call} />
           </StreamTheme>
         </main>
 
         {/* Side Panel (Participants or In-call Chat) */}
         <MeetingSidePanel
           activePanel={activePanel}
-          onClose={() => setActivePanel(null)}
+          onClose={() => handleTogglePanel(null)}
           course={course}
           isOwner={isOwner}
         />
@@ -565,10 +933,9 @@ function MeetingContainer({ course, isOwner, onLeave }) {
         course={course}
         isOwner={isOwner}
         onLeave={onLeave}
-        layout={layout}
-        setLayout={setLayout}
         activePanel={activePanel}
-        setActivePanel={setActivePanel}
+        setActivePanel={handleTogglePanel}
+        unreadCount={unreadCount}
       />
 
       {/* Class Ended Banner Notice */}
