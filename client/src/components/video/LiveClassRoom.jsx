@@ -134,6 +134,26 @@ function GoogleMeetLayout({ course, call }) {
   const screenSharingParticipant = participants.find((p) => hasScreenShare(p));
   const isLocalPresenter = screenSharingParticipant?.isLocalParticipant;
 
+  // iOS Safari requires `playsinline` on <video> elements to render inline.
+  // The Stream SDK controls the DOM, so we patch any video inside the screen
+  // share tile whenever a presenter is active.
+  useEffect(() => {
+    if (!screenSharingParticipant) return;
+    const patch = () => {
+      const videos = document.querySelectorAll('.gm-screenshare-tile video');
+      videos.forEach((v) => {
+        if (!v.hasAttribute('playsinline')) {
+          v.setAttribute('playsinline', '');
+          v.setAttribute('webkit-playsinline', '');
+        }
+      });
+    };
+    patch();
+    // Re-run briefly after mount in case the SDK renders the video slightly late
+    const t = setTimeout(patch, 500);
+    return () => clearTimeout(t);
+  }, [screenSharingParticipant]);
+
   const handleStopSharing = async () => {
     try {
       if (call?.screenShare) {
@@ -359,6 +379,11 @@ function MeetingControls({
   const { microphone, isMute: isMicMuted } = useMicrophoneState();
   const { camera, isMute: isCamMuted } = useCameraState();
   const { screenShare, isMute: isScreenShareDisabled } = useScreenShareState();
+
+  // Screen sharing requires getDisplayMedia which is not available on mobile browsers
+  const isScreenShareSupported =
+    typeof navigator !== 'undefined' &&
+    typeof navigator.mediaDevices?.getDisplayMedia === 'function';
   const participants = useParticipants();
 
   const [showEndModal, setShowEndModal] = useState(false);
@@ -381,6 +406,10 @@ function MeetingControls({
   };
 
   const toggleScreenShare = async () => {
+    if (!isScreenShareSupported) {
+      alert('Screen sharing is not supported on this device or browser. Please use a desktop browser to share your screen.');
+      return;
+    }
     try {
       await screenShare.toggle();
     } catch (err) {
@@ -464,19 +493,21 @@ function MeetingControls({
             {!isCamMuted ? <VideoIcon size={19} /> : <VideoOff size={19} />}
           </button>
 
-          {/* Screen Share Button (Available on mobile & desktop) */}
-          <button
-            type="button"
-            onClick={toggleScreenShare}
-            className={`p-3 sm:p-3.5 rounded-full transition-all duration-200 cursor-pointer active:scale-95 shadow-md flex items-center justify-center ${
-              !isScreenShareDisabled
-                ? 'bg-primary-600 text-white shadow-[0_0_12px_rgba(15,107,104,0.6)]'
-                : 'bg-neutral-800 hover:bg-neutral-700 text-white border border-neutral-700'
-            }`}
-            title={!isScreenShareDisabled ? 'Stop sharing screen' : 'Share screen'}
-          >
-            <ScreenShare size={19} />
-          </button>
+          {/* Screen Share Button (Desktop only — getDisplayMedia is not supported on mobile browsers) */}
+          {isScreenShareSupported && (
+            <button
+              type="button"
+              onClick={toggleScreenShare}
+              className={`p-3 sm:p-3.5 rounded-full transition-all duration-200 cursor-pointer active:scale-95 shadow-md flex items-center justify-center ${
+                !isScreenShareDisabled
+                  ? 'bg-primary-600 text-white shadow-[0_0_12px_rgba(15,107,104,0.6)]'
+                  : 'bg-neutral-800 hover:bg-neutral-700 text-white border border-neutral-700'
+              }`}
+              title={!isScreenShareDisabled ? 'Stop sharing screen' : 'Share screen'}
+            >
+              <ScreenShare size={19} />
+            </button>
+          )}
 
           {/* Chat Button (Available on mobile & desktop) */}
           <button
