@@ -197,6 +197,10 @@ input[type="time"]::-webkit-datetime-edit-ampm-field {
 .gm-screenshare-tile .str-video__video {
   object-fit: contain !important;
   background-color: #000000 !important;
+  width: 100% !important;
+  height: 100% !important;
+  /* Force inline playback on iOS Safari — prevents blank video on mobile */
+  -webkit-playsinline: 1;
 }
 
 .gm-screenshare-tile .str-video__participant-view {
