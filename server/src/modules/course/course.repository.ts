@@ -1,5 +1,5 @@
 import prisma from '../../config/prismaClient.js';
-import { CreateCourseInput } from './course.types.js';
+import { CreateCourseInput, UpdateCourseInput } from './course.types.js';
 
 const userBrief = {
     select: {
@@ -16,6 +16,14 @@ function createCourse(data: CreateCourseInput & { createdById: string }) {
 function findCourseById(id: string) {
     return prisma.course.findUnique({
         where: { id },
+        include: { createdBy: userBrief },
+    });
+}
+
+function updateCourse(id: string, data: UpdateCourseInput) {
+    return prisma.course.update({
+        where: { id },
+        data,
         include: { createdBy: userBrief },
     });
 }
@@ -74,6 +82,7 @@ function removeCourseMember(courseId: string, userId: string) {
 export {
     createCourse,
     findCourseById,
+    updateCourse,
     deleteCourse,
     findCourseByJoinCode,
     findCourseOwnerId,

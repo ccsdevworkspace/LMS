@@ -24,3 +24,25 @@ export const createCourseSchema = z
     });
 
 export type CreateCourseInput = z.infer<typeof createCourseSchema>;
+
+export const updateCourseSchema = z
+    .object({
+        name: z.string().min(1, 'Course name is required').optional(),
+        section: z.string().optional(),
+        days: z
+            .array(z.enum(['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']))
+            .min(1, 'Select a day')
+            .optional(),
+        startTime: time.optional(),
+        endTime: time.optional(),
+    })
+    .refine(
+        ({ startTime, endTime }) =>
+            !startTime || !endTime || startTime < endTime,
+        {
+            message: 'End time should be later from the start time',
+            path: ['endTime'],
+        },
+    );
+
+export type UpdateCourseInput = z.infer<typeof updateCourseSchema>;

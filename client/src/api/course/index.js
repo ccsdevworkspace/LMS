@@ -15,6 +15,11 @@ async function getCourse(id) {
   return response.data
 }
 
+async function updateCourse(id, data) {
+  const response = await api.patch(`/courses/${id}`, data)
+  return response.data
+}
+
 async function deleteCourse(id) {
   const response = await api.delete(`/courses/${id}`)
   return response.data
@@ -44,6 +49,7 @@ export {
     listCourses,
     createCourse,
     getCourse,
+    updateCourse,
     deleteCourse,
     joinCourse,
     leaveCourse,

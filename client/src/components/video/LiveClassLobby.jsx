@@ -219,6 +219,7 @@ export default function LiveClassLobby({
                         <img
                           src={user.avatarUrl}
                           alt={user.fullName}
+                          referrerPolicy="no-referrer"
                           className="w-full h-full rounded-full object-cover"
                         />
                       ) : (
@@ -394,6 +395,7 @@ export default function LiveClassLobby({
                       <img
                         src={user.avatarUrl}
                         alt={user.fullName}
+                        referrerPolicy="no-referrer"
                         className="w-full h-full rounded-full object-cover"
                       />
                     ) : (

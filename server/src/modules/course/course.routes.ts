@@ -4,6 +4,7 @@ import {
     createCourseHandler,
     listCoursesHandler,
     getCourseHandler,
+    updateCourseHandler,
     deleteCourseHandler,
     joinCourseHandler,
     leaveCourseHandler,
@@ -18,6 +19,7 @@ router.use(authenticate);
 router.get('/courses', listCoursesHandler);
 router.post('/courses', createCourseHandler);
 router.get('/courses/:id', getCourseHandler);
+router.patch('/courses/:id', updateCourseHandler);
 router.delete('/courses/:id', deleteCourseHandler);
 router.post('/courses/join', joinCourseHandler);
 router.post('/courses/:id/leave', leaveCourseHandler);

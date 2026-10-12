@@ -3,6 +3,7 @@ import {
     listCourses,
     createCourse,
     getCourse,
+    updateCourse,
     deleteCourse,
     joinCourse,
     leaveCourse,
@@ -45,6 +46,17 @@ export const useCourseStore = create((set) => ({
       const currentCourse = (await getCourse(id)).course
       set({ currentCourse })
       return currentCourse
+    } finally {
+      set({ loading: false })
+    }
+  },
+
+  updateCourse: async (id, data) => {
+    set({ loading: true })
+    try {
+      const updated = (await updateCourse(id, data)).course
+      set({ currentCourse: updated })
+      return updated
     } finally {
       set({ loading: false })
     }
@@ -99,14 +111,16 @@ export const useCourseStore = create((set) => ({
   },
 
   removeMember: async (courseId, userId) => {
-    set({ loading: true })
     try {
       await removeMember(courseId, userId)
       set((state) => ({
-        members: state.members.filter((m) => m.id !== userId),
+        members: state.members.filter(
+          (m) => m.userId !== userId && m.id !== userId && m.user?.id !== userId
+        ),
       }))
-    } finally {
-      set({ loading: false })
+    } catch (error) {
+      console.error('Failed to remove member:', error)
+      throw error
     }
   },
 }))
