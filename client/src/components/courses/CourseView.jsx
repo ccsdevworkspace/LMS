@@ -95,25 +95,14 @@ export default function CourseView() {
   return (
     <>
       <main className="max-w-3xl mx-auto w-full p-6 sm:p-6 lg:p-12 flex flex-col gap-10">
-        <nav>
-          <Link to="/courses" className="inline-flex items-center gap-1 text-sm font-bold text-primary-600 hover:text-primary-600 transition-colors">
+        <nav className="flex items-center justify-between gap-2">
+          <Link to="/courses" className="inline-flex items-center gap-1 text-sm font-bold text-primary-600 hover:text-primary-600 transition-colors shrink-0">
             <ChevronLeft size={18}/>
             COURSES
           </Link>
-        </nav>
-
-        <header className="-mt-4 flex justify-between items-center gap-4">
-          <div>
-            <h1 className="text-4xl font-extrabold text-fg tracking-tight mb-2">
-              {currentCourse.name}
-            </h1>
-            <p className="text-sm font-bold uppercase tracking-widest text-fg-muted">
-              {currentCourse.section}
-            </p>
-          </div>
 
           {/* Action buttons: Share Link + Settings */}
-          <div className="flex items-center gap-2 shrink-0">
+          <div className="flex items-center gap-2">
             {/* Share Link button */}
             <button
               onClick={handleCopyLink}
@@ -135,6 +124,15 @@ export default function CourseView() {
               <Settings size={16} />
             </button>
           </div>
+        </nav>
+
+        <header className="-mt-4">
+          <h1 className="text-4xl font-extrabold text-fg tracking-tight mb-2">
+            {currentCourse.name}
+          </h1>
+          <p className="text-sm font-bold uppercase tracking-widest text-fg-muted">
+            {currentCourse.section}
+          </p>
         </header>
 
         <section className="flex flex-col-reverse sm:flex-row justify-between items-center sm:items-stretch bg-card border border-border rounded-2xl p-8 sm:p-10 shadow-sm gap-8">
@@ -239,7 +237,6 @@ export default function CourseView() {
         isTeacher={isTeacher}
         onCopyLink={handleCopyLink}
         onOpenMembers={() => {
-          setSettingsOpen(false)
           setMembersOpen(true)
         }}
         onLeave={() => {
