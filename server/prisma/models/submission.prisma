@@ -19,6 +19,7 @@ model Submission {
   status      SubmissionStatus @default(SUBMITTED)
   score       Int?
   feedback    String?
+  content     String?
 
   startedAt   DateTime?
   submittedAt DateTime  @default(now())
