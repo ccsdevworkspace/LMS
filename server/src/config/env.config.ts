@@ -15,6 +15,7 @@ export const env = {
     allowedOrigin: process.env.ALLOWED_ORIGIN!,
     supabaseUrl: process.env.SUPABASE_URL!,
     supabasePublishableKey: process.env.SUPABASE_PUBLISHABLE_KEY!,
+    supabaseServiceRoleKey: process.env.SUPABASE_SERVICE_ROLE!,
     databaseUrl: process.env.DATABASE_URL!,
     directUrl: process.env.DIRECT_URL!,
     isProduction: process.env.NODE_ENV === 'production',

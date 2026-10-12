@@ -5,8 +5,8 @@ import TaskCard from './TaskCard'
 
 const fallback = {
   task: {
-    title: 'Task Name',
-    course: 'Course Name',
+    title: 'No Tasks For Now',
+    course: 'Never stop learning',
   },
   quote: {
     text: "To fail is to learn—to stop learning is to lose.",

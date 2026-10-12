@@ -7,6 +7,10 @@ import Courses from './pages/Courses'
 import CourseView from './components/courses/CourseView'
 import CourseLayout from './layouts/CourseLayout'
 import LiveClassPage from './pages/LiveClassPage'
+import Tasks from './components/tasks/Tasks'
+import CreateTask from './components/tasks/CreateTask'
+import TaskDetail from './components/tasks/TaskDetail'
+import Submissions from './components/tasks/Submissions'
 import Todo from './pages/Todo'
 import Calendar from './pages/Calendar'
 import Chat from './pages/Chat'
@@ -33,6 +37,10 @@ export default createBrowserRouter([
         children: [
           { path:'courses/:id', element: <CourseView/> },
           { path:'courses/:id/video', element: <LiveClassPage/> },
+          { path:'courses/:id/task', element: <Tasks/> },
+          { path:'courses/:id/task/create', element: <CreateTask/> },
+          { path:'courses/:id/task/:taskId', element: <TaskDetail/> },
+          { path:'courses/:id/task/:taskId/submissions', element: <Submissions/> },
         ],
       },
     ],

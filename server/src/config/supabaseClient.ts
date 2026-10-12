@@ -5,6 +5,12 @@ import {
     serializeCookieHeader,
 } from '@supabase/ssr';
 import { env } from './env.config.js';
+import { createClient } from '@supabase/supabase-js';
+
+export const supabaseAdmin = createClient(
+    env.supabaseUrl,
+    env.supabaseServiceRoleKey,
+);
 
 export function createSupabaseClient(req: Request, res: Response) {
     const crossSite = process.env.CROSS_SITE === 'true';

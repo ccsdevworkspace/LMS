@@ -164,7 +164,8 @@ input[type="time"]::-webkit-datetime-edit-fields-wrapper,
 input[type="time"]::-webkit-datetime-edit-text,
 input[type="time"]::-webkit-datetime-edit-hour-field,
 input[type="time"]::-webkit-datetime-edit-minute-field,
-input[type="time"]::-webkit-datetime-edit-ampm-field {
+input[type="time"]::-webkit-datetime-edit-ampm-field,
+input[type="date"]::-webkit-datetime-edit-month-field {
   user-select: none;
   background-color: transparent !important;
   color: inherit !important;
