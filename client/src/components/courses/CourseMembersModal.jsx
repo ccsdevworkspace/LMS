@@ -117,9 +117,9 @@ export default function CourseMembersModal({ open, onClose, course, isTeacher })
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-60 flex items-center justify-center p-4">
       {/* backdrop */}
-      <div className="absolute inset-0 bg-app/80" onClick={onClose} />
+      <div className="absolute inset-0 bg-app/70" onClick={onClose} />
 
       {/* modal */}
       <section className="relative z-10 w-full max-w-lg bg-modal rounded-2xl border border-border shadow-xl flex flex-col max-h-[85vh]">

@@ -94,7 +94,7 @@ export default function CourseSettingsSidebar({
 
       {/* sidebar */}
       <aside
-        className={`fixed top-0 right-0 bottom-0 z-50 w-96 bg-modal border-l border-border shadow-xl flex flex-col
+        className={`fixed top-0 right-0 bottom-0 z-50 w-full max-w-96 bg-modal border-l border-border shadow-xl flex flex-col
           transition-transform duration-300 ease-in-out ${open ? 'translate-x-0' : 'translate-x-full'}`}
       >
         {/* header */}
