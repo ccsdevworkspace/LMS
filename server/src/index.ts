@@ -9,6 +9,8 @@ import authRoute from './modules/auth/auth.routes.js';
 import userRoute from './modules/user/user.routes.js';
 import courseRoute from './modules/course/course.routes.js';
 import liveClassRoute from './modules/live-class/live-class.routes.js';
+import taskRoute from './modules/task/task.routes.js';
+import todoRoute from './modules/todo/todo.routes.js';
 import { errorHandler } from './middleware/error.middleware.js';
 
 const server = express();
@@ -25,6 +27,8 @@ server.use('/auth', authRoute);
 server.use('/user', userRoute);
 server.use(courseRoute);
 server.use(liveClassRoute);
+server.use(taskRoute);
+server.use(todoRoute);
 server.use(errorHandler);
 
 server.listen(PORT, () => {
