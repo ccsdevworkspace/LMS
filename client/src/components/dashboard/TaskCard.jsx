@@ -13,7 +13,7 @@ export default function TaskCard({ task }) {
             </div>
             <div className="flex-1 min-w-0">
               <h3 className="text-xl font-bold text-fg sm:text-3xl mb-1">{task.title}</h3>
-              <p className="text-lg font-medium leading-5 text-fg-subtle">{task.course}</p>
+              <p className="text-lg font-medium leading-5 text-fg-subtle">{task.course?.name ?? task.course}</p>
             </div>
           </div>
           <div className="w-full sm:w-auto">
