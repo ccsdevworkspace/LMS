@@ -4,7 +4,7 @@
   "author": "B App",
   "private": true,
   "version": "0.1.0",
-  "main": "electron/main.cjs",
+  "main": "src/main.jsx",
   "type": "module",
   "scripts": {
     "dev": "vite",
