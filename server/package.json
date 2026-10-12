@@ -50,11 +50,13 @@
     "@stream-io/node-sdk": "^0.8.6",
     "@supabase/ssr": "^0.12.3",
     "@supabase/supabase-js": "^2.110.7",
+    "@types/multer": "^2.3.0",
     "cors": "^2.8.5",
     "dotenv": "^17.2.1",
     "express": "^5.1.0",
     "express-rate-limit": "^8.0.1",
     "helmet": "^8.1.0",
+    "multer": "^2.4.0",
     "pg": "^8.22.0",
     "zod": "^4.4.3"
   }
