@@ -13,12 +13,24 @@ const NAV_LINKS = [
 ]
 
 function Avatar({ profile }) {
+  const [hasError, setHasError] = useState(false)
   return (
     <div className="w-9 h-9 md:w-12 md:h-12 rounded-full overflow-hidden bg-muted shrink-0">
-      {profile?.avatarUrl
-        ? <img src={profile.avatarUrl} className="w-full h-full object-cover" />
-        : <div className="w-full h-full flex items-center justify-center text-fg-subtle text-sm font-medium">{profile?.fullName?.[0] ?? '?'}</div>
-      }
+      {profile?.avatarUrl && !hasError
+        ? (
+            <img
+              src={profile.avatarUrl}
+              alt={profile?.fullName}
+              referrerPolicy="no-referrer"
+              onError={() => setHasError(true)}
+              className="w-full h-full object-cover"
+            />
+          )
+        : (
+            <div className="w-full h-full flex items-center justify-center text-fg-subtle text-sm font-medium">
+              {profile?.fullName?.[0] ?? '?'}
+            </div>
+          )}
     </div>
   )
 }

@@ -1,14 +1,16 @@
 import { useParams, Link, useNavigate } from 'react-router-dom'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { useCourseStore } from '../../stores/course'
 import { useUserStore } from '../../stores/user'
 import Loading from '../app/Loading'
 import Modal from '../app/Modal'
 import EmptyState from '../app/EmptyState'
-import { BookX,  ArrowRight, ChevronLeft,  Trash2,  LogOut, ClipboardList, ChevronRight, MessageSquare, Folder } from 'lucide-react'
+import { BookX, ArrowRight, ChevronLeft, Trash2, LogOut, ClipboardList, ChevronRight, MessageSquare, Folder, Share2, Settings } from 'lucide-react'
 import SuccessScreen from './SuccessScreen'
 import ConfirmAction from './ConfirmAction'
 import { getLiveClassStatus } from '../../api/liveClass'
+import CourseSettingsSidebar from './CourseSettingsSidebar'
+import CourseMembersModal from './CourseMembersModal'
 
 export default function CourseView() {
   const { id } = useParams()
@@ -17,6 +19,11 @@ export default function CourseView() {
   const navigate = useNavigate()
   const [goneCourse, setGoneCourse] = useState(null)
   const [isLive, setIsLive] = useState(false)
+  const [settingsOpen, setSettingsOpen] = useState(false)
+  const [membersOpen, setMembersOpen] = useState(false)
+  const [confirmLeave, setConfirmLeave] = useState(false)
+  const [confirmDelete, setConfirmDelete] = useState(false)
+  const [linkCopied, setLinkCopied] = useState(false)
 
   useEffect(() => {
     const getCourseById = async () => {
@@ -30,6 +37,16 @@ export default function CourseView() {
     }
     getCourseById()
   }, [id, getCourse])
+
+  const handleCopyLink = useCallback(() => {
+    const link = `${window.location.origin}/join/${currentCourse?.joinCode}`
+    navigator.clipboard.writeText(link).then(() => {
+      setLinkCopied(true)
+      setTimeout(() => setLinkCopied(false), 2000)
+    }).catch(() => {
+      // fallback
+    })
+  }, [currentCourse?.joinCode])
 
   if (goneCourse) {
     return (
@@ -76,144 +93,208 @@ export default function CourseView() {
   const isTeacher = currentCourse.createdById === profile?.id
 
   return (
-    <main className="max-w-3xl mx-auto w-full p-6 sm:p-6 lg:p-12 flex flex-col gap-10">
-      <nav>
-        <Link to="/courses" className="inline-flex items-center gap-1 text-sm font-bold text-primary-600 hover:text-primary-600 transition-colors">
-          <ChevronLeft size={18}/>
-          COURSES
-        </Link>
-      </nav>
-
-      <header className="-mt-4 flex justify-between items-center gap-4">
-        <div>
-          <h1 className="text-4xl font-extrabold text-fg tracking-tight mb-2">
-            {currentCourse.name}
-          </h1>
-          <p className="text-sm font-bold uppercase tracking-widest text-fg-muted">
-            {currentCourse.section}
-          </p>
-        </div>
-        {isTeacher ? (
-          <ConfirmAction
-            icon={Trash2}
-            label="Delete"
-            title="Delete Course"
-            subtitle="Are you sure?"
-            confirmLabel="Delete"
-            loadingLabel="Deleting..."
-            onConfirm={async () => {
-              await deleteCourse(currentCourse.id)
-              setGoneCourse({ action: 'deleted', course: currentCourse })
-            }}
-          />
-        ) : (
-          <ConfirmAction
-            icon={LogOut}
-            label="Leave"
-            title="Leave Course"
-            subtitle="Are you sure?"
-            confirmLabel="Leave"
-            loadingLabel="Leaving..."
-            onConfirm={async () => {
-              await leaveCourse(currentCourse.id)
-              setGoneCourse({ action: 'left', course: currentCourse })
-            }}
-          />
-        )}
-      </header>
-
-      <section className="flex flex-col-reverse sm:flex-row justify-between items-center sm:items-stretch bg-card border border-border rounded-2xl p-8 sm:p-10 shadow-sm gap-8">
-        <div className="flex flex-col items-center sm:items-start text-center sm:text-left justify-center max-w-sm">
-          <div className="flex items-center gap-2 mb-2">
-            <p className="text-sm font-semibold text-fg-muted">Today's Classroom</p>
-            {isLive && (
-              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
-                <span className="relative flex h-2 w-2">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-                </span>
-                LIVE NOW
-              </span>
-            )}
-          </div>
-          <h2 className="text-3xl font-bold text-fg mb-3">Live Classroom</h2>
-          <p className="text-sm text-fg-subtle mb-8 leading-relaxed">
-            {isLive
-              ? (isTeacher ? "Your live class is currently in progress." : "Class is ongoing! Click below to enter.")
-              : (isTeacher 
-                ? "Start a live class whenever you're ready."
-                : "Access your live classes from here.")}
-          </p>
-          
-          <Link to={`/courses/${currentCourse.id}/video`}
-          className="bg-primary-600 active:scale-95 text-fg-inverse dark:text-fg px-6 py-3 rounded-xl text-sm font-bold shadow-sm transition-all cursor-pointer hover:bg-btn-hover">
-            {isLive
-              ? (isTeacher ? "Resume Live Class" : "Join Ongoing Class")
-              : (isTeacher ? "Create Live Class" : "Join Live Class")}
+    <>
+      <main className="max-w-3xl mx-auto w-full p-6 sm:p-6 lg:p-12 flex flex-col gap-10">
+        <nav>
+          <Link to="/courses" className="inline-flex items-center gap-1 text-sm font-bold text-primary-600 hover:text-primary-600 transition-colors">
+            <ChevronLeft size={18}/>
+            COURSES
           </Link>
-        </div>
-        
-        <figure className="flex justify-center items-center drop-shadow-lg w-32 sm:w-48">
-          <img src="/video.webp" className="w-full h-auto object-contain"/>
-        </figure>
-      </section>
+        </nav>
 
-      <nav className="flex flex-col gap-4">
-        <Link to={`/courses/${currentCourse.id}/task`} 
-        className="group flex items-center justify-between p-6 bg-card border border-border rounded-2xl hover:border-border-hover hover:shadow-md transition-all duration-300">
-          <div className="flex items-center gap-6">
-            <div className="flex items-center justify-center w-14 h-14 shrink-0 bg-primary-600/10 rounded-xl text-primary-600">
-              <ClipboardList size={26} strokeWidth={2.5}/>
-            </div>
-            <div className="flex flex-col gap-1">
-              <h3 className="text-lg font-extrabold text-fg">Task</h3>
-              <p className="text-sm text-fg-muted">
-                {isTeacher 
-                  ? "Create and manage assignments and tests."
-                  : "View your assignments and tests."}
-              </p>
-            </div>
+        <header className="-mt-4 flex justify-between items-center gap-4">
+          <div>
+            <h1 className="text-4xl font-extrabold text-fg tracking-tight mb-2">
+              {currentCourse.name}
+            </h1>
+            <p className="text-sm font-bold uppercase tracking-widest text-fg-muted">
+              {currentCourse.section}
+            </p>
           </div>
-          <ChevronRight className="text-border group-hover:text-fg-muted shrink-0" size={24} />
-        </Link>
-        
-        <Link to={`/courses/${currentCourse.id}/discussion`} 
-        className="group flex items-center justify-between p-6 bg-card border border-border rounded-2xl hover:border-border-hover hover:shadow-md transition-all duration-300">
-          <div className="flex items-center gap-6">
-            <div className="flex items-center justify-center w-14 h-14 shrink-0 bg-primary-600/10 rounded-xl text-primary-600">
-              <MessageSquare size={26} strokeWidth={2.5}/>
-            </div>
-            <div className="flex flex-col gap-1">
-              <h3 className="text-lg font-extrabold text-fg">Discussions</h3>
-              <p className="text-sm text-fg-muted">
-                {isTeacher 
-                  ? "Chat with students, share announcements, and more."
-                  : "Join conversations, ask questions and see announcements."}
-              </p>
-            </div>
-          </div>
-          <ChevronRight className="text-border group-hover:text-fg-muted shrink-0" size={24}/>
-        </Link>
 
-        <Link to={`/courses/${currentCourse.id}/resources`}
-        className="group flex items-center justify-between p-6 bg-card border border-border rounded-2xl hover:border-border-hover hover:shadow-md transition-all duration-300">
-          <div className="flex items-center gap-6">
-            <div className="flex items-center justify-center w-14 h-14 shrink-0 bg-primary-600/10 rounded-xl text-primary-600">
-              <Folder size={26} strokeWidth={2.5}/>
-            </div>
-            <div className="flex flex-col gap-1">
-              <h3 className="text-lg font-extrabold text-fg">Resources</h3>
-              <p className="text-sm text-fg-muted">
-                {isTeacher 
-                  ? "Upload and manage course materials and files."
-                  : "Access course materials and files anytime."}
-              </p>
-            </div>
-          </div>
-          <ChevronRight className="text-border group-hover:text-fg-muted shrink-0" size={24}/>
-        </Link>
+          {/* Action buttons: Share Link + Settings */}
+          <div className="flex items-center gap-2 shrink-0">
+            {/* Share Link button */}
+            <button
+              onClick={handleCopyLink}
+              title="Copy invite link"
+              className="inline-flex items-center gap-2 rounded-lg border border-border px-3 py-2 text-sm font-bold text-fg-muted transition hover:border-fg/30 hover:bg-muted active:scale-95"
+            >
+              <Share2 size={15} />
+              <span className="hidden sm:inline">
+                {linkCopied ? 'Copied!' : 'Share Link'}
+              </span>
+            </button>
 
-      </nav>
-    </main>
+            {/* Settings button */}
+            <button
+              onClick={() => setSettingsOpen(true)}
+              title="Course settings"
+              className="inline-flex items-center justify-center rounded-lg border border-border p-2 text-fg-muted transition hover:border-fg/30 hover:bg-muted active:scale-95"
+            >
+              <Settings size={16} />
+            </button>
+          </div>
+        </header>
+
+        <section className="flex flex-col-reverse sm:flex-row justify-between items-center sm:items-stretch bg-card border border-border rounded-2xl p-8 sm:p-10 shadow-sm gap-8">
+          <div className="flex flex-col items-center sm:items-start text-center sm:text-left justify-center max-w-sm">
+            <div className="flex items-center gap-2 mb-2">
+              <p className="text-sm font-semibold text-fg-muted">Today's Classroom</p>
+              {isLive && (
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                  <span className="relative flex h-2 w-2">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                  </span>
+                  LIVE NOW
+                </span>
+              )}
+            </div>
+            <h2 className="text-3xl font-bold text-fg mb-3">Live Classroom</h2>
+            <p className="text-sm text-fg-subtle mb-8 leading-relaxed">
+              {isLive
+                ? (isTeacher ? "Your live class is currently in progress." : "Class is ongoing! Click below to enter.")
+                : (isTeacher 
+                  ? "Start a live class whenever you're ready."
+                  : "Access your live classes from here.")}
+            </p>
+            
+            <Link to={`/courses/${currentCourse.id}/video`}
+            className="bg-primary-600 active:scale-95 text-fg-inverse dark:text-fg px-6 py-3 rounded-xl text-sm font-bold shadow-sm transition-all cursor-pointer hover:bg-btn-hover">
+              {isLive
+                ? (isTeacher ? "Resume Live Class" : "Join Ongoing Class")
+                : (isTeacher ? "Create Live Class" : "Join Live Class")}
+            </Link>
+          </div>
+          
+          <figure className="flex justify-center items-center drop-shadow-lg w-32 sm:w-48">
+            <img src="/video.webp" className="w-full h-auto object-contain"/>
+          </figure>
+        </section>
+
+        <nav className="flex flex-col gap-4">
+          <Link to={`/courses/${currentCourse.id}/task`} 
+          className="group flex items-center justify-between p-6 bg-card border border-border rounded-2xl hover:border-border-hover hover:shadow-md transition-all duration-300">
+            <div className="flex items-center gap-6">
+              <div className="flex items-center justify-center w-14 h-14 shrink-0 bg-primary-600/10 rounded-xl text-primary-600">
+                <ClipboardList size={26} strokeWidth={2.5}/>
+              </div>
+              <div className="flex flex-col gap-1">
+                <h3 className="text-lg font-extrabold text-fg">Task</h3>
+                <p className="text-sm text-fg-muted">
+                  {isTeacher 
+                    ? "Create and manage assignments and tests."
+                    : "View your assignments and tests."}
+                </p>
+              </div>
+            </div>
+            <ChevronRight className="text-border group-hover:text-fg-muted shrink-0" size={24} />
+          </Link>
+          
+          <Link to={`/courses/${currentCourse.id}/discussion`} 
+          className="group flex items-center justify-between p-6 bg-card border border-border rounded-2xl hover:border-border-hover hover:shadow-md transition-all duration-300">
+            <div className="flex items-center gap-6">
+              <div className="flex items-center justify-center w-14 h-14 shrink-0 bg-primary-600/10 rounded-xl text-primary-600">
+                <MessageSquare size={26} strokeWidth={2.5}/>
+              </div>
+              <div className="flex flex-col gap-1">
+                <h3 className="text-lg font-extrabold text-fg">Discussions</h3>
+                <p className="text-sm text-fg-muted">
+                  {isTeacher 
+                    ? "Chat with students, share announcements, and more."
+                    : "Join conversations, ask questions and see announcements."}
+                </p>
+              </div>
+            </div>
+            <ChevronRight className="text-border group-hover:text-fg-muted shrink-0" size={24}/>
+          </Link>
+
+          <Link to={`/courses/${currentCourse.id}/resources`}
+          className="group flex items-center justify-between p-6 bg-card border border-border rounded-2xl hover:border-border-hover hover:shadow-md transition-all duration-300">
+            <div className="flex items-center gap-6">
+              <div className="flex items-center justify-center w-14 h-14 shrink-0 bg-primary-600/10 rounded-xl text-primary-600">
+                <Folder size={26} strokeWidth={2.5}/>
+              </div>
+              <div className="flex flex-col gap-1">
+                <h3 className="text-lg font-extrabold text-fg">Resources</h3>
+                <p className="text-sm text-fg-muted">
+                  {isTeacher 
+                    ? "Upload and manage course materials and files."
+                    : "Access course materials and files anytime."}
+                </p>
+              </div>
+            </div>
+            <ChevronRight className="text-border group-hover:text-fg-muted shrink-0" size={24}/>
+          </Link>
+
+        </nav>
+      </main>
+
+      {/* Settings Sidebar */}
+      <CourseSettingsSidebar
+        open={settingsOpen}
+        onClose={() => setSettingsOpen(false)}
+        course={currentCourse}
+        isTeacher={isTeacher}
+        onCopyLink={handleCopyLink}
+        onOpenMembers={() => {
+          setSettingsOpen(false)
+          setMembersOpen(true)
+        }}
+        onLeave={() => {
+          setSettingsOpen(false)
+          setConfirmLeave(true)
+        }}
+        onDelete={() => {
+          setSettingsOpen(false)
+          setConfirmDelete(true)
+        }}
+      />
+
+      {/* Members Modal */}
+      <CourseMembersModal
+        open={membersOpen}
+        onClose={() => setMembersOpen(false)}
+        course={currentCourse}
+        isTeacher={isTeacher}
+      />
+
+      {/* Confirm Leave Modal */}
+      {confirmLeave && (
+        <ConfirmAction
+          icon={LogOut}
+          label="Leave"
+          title="Leave Course"
+          subtitle="Are you sure?"
+          confirmLabel="Leave"
+          loadingLabel="Leaving..."
+          forceOpen={confirmLeave}
+          onClose={() => setConfirmLeave(false)}
+          onConfirm={async () => {
+            await leaveCourse(currentCourse.id)
+            setGoneCourse({ action: 'left', course: currentCourse })
+          }}
+        />
+      )}
+
+      {/* Confirm Delete Modal */}
+      {confirmDelete && (
+        <ConfirmAction
+          icon={Trash2}
+          label="Delete"
+          title="Delete Course"
+          subtitle="Are you sure?"
+          confirmLabel="Delete"
+          loadingLabel="Deleting..."
+          forceOpen={confirmDelete}
+          onClose={() => setConfirmDelete(false)}
+          onConfirm={async () => {
+            await deleteCourse(currentCourse.id)
+            setGoneCourse({ action: 'deleted', course: currentCourse })
+          }}
+        />
+      )}
+    </>
   )
 }

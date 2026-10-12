@@ -7,5 +7,12 @@ const apiUrl = (branch && branch !== 'main')
     ? `https://lms--${slug}.ccs-dev.deno.net`
     : process.env.VITE_API_BASE_URL_PROD;
 
-fs.writeFileSync('.env.local', `VITE_API_BASE_URL=${apiUrl}\n`);
-console.log(`[set-api-url] branch="${branch}" -> ${apiUrl}`);
+if (apiUrl) {
+    fs.writeFileSync('.env.local', `VITE_API_BASE_URL=${apiUrl}\n`);
+    console.log(`[set-api-url] branch="${branch}" -> ${apiUrl}`);
+} else {
+    if (fs.existsSync('.env.local')) {
+        fs.unlinkSync('.env.local');
+    }
+    console.log(`[set-api-url] branch="${branch}" (no remote API URL set, skipping .env.local)`);
+}

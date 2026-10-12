@@ -3,14 +3,35 @@ import { useCourseStore } from '../../stores/course'
 import { ArrowRight } from 'lucide-react'
 import Modal from '../app/Modal'
 
-export default function ConfirmAction({ icon: Icon, label, title, subtitle, confirmLabel, loadingLabel, onConfirm }) {
+/**
+ * ConfirmAction can be used in two ways:
+ * 1. Standalone button mode (default): renders a button that opens the confirm modal
+ * 2. Controlled mode: pass `forceOpen={true}` and `onClose` to control externally
+ *    (e.g., triggered from a sidebar). In this mode, no trigger button is rendered.
+ */
+export default function ConfirmAction({
+  icon: Icon,
+  label,
+  title,
+  subtitle,
+  confirmLabel,
+  loadingLabel,
+  onConfirm,
+  // Controlled mode
+  forceOpen,
+  onClose,
+}) {
   const loading = useCourseStore((s) => s.loading)
-  const [confirmOpen, setConfirmOpen] = useState(false)
+  const [internalOpen, setInternalOpen] = useState(false)
+
+  const isControlled = forceOpen !== undefined
+  const open = isControlled ? forceOpen : internalOpen
+  const closeModal = isControlled ? onClose : () => setInternalOpen(false)
 
   const handleConfirm = async () => {
     try {
       await onConfirm()
-      setConfirmOpen(false)
+      closeModal()
     } catch (err) {
       console.error(err)
     }
@@ -18,25 +39,28 @@ export default function ConfirmAction({ icon: Icon, label, title, subtitle, conf
 
   return (
     <>
-      <button
-        onClick={() => setConfirmOpen(true)}
-        disabled={loading}
-        title={label}
-        className="inline-flex shrink-0 items-center gap-2 rounded-lg border border-border p-2 text-sm font-bold text-fg-muted transition hover:border-fg/30 hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50"
-      >
-        <Icon size={16} />
-      </button>
+      {/* Only show the trigger button in standalone (uncontrolled) mode */}
+      {!isControlled && (
+        <button
+          onClick={() => setInternalOpen(true)}
+          disabled={loading}
+          title={label}
+          className="inline-flex shrink-0 items-center gap-2 rounded-lg border border-border p-2 text-sm font-bold text-fg-muted transition hover:border-fg/30 hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          <Icon size={16} />
+        </button>
+      )}
 
       <Modal
-        open={confirmOpen}
-        closeModal={() => setConfirmOpen(false)}
+        open={open}
+        closeModal={closeModal}
         title={title}
         subtitle={subtitle}
         fullScreen={false}
       >
         <div className="flex justify-end items-center gap-3">
           <button
-            onClick={() => setConfirmOpen(false)}
+            onClick={closeModal}
             disabled={loading}
             className="px-6 py-2.5 text-sm font-bold text-fg transition hover:opacity-70 disabled:cursor-not-allowed disabled:opacity-50"
           >

@@ -4,12 +4,17 @@ import {
     joinCourseByCode,
     leaveCourse,
 } from './course.service.js';
-import { createCourseSchema, joinCourseSchema } from './course.types.js';
+import {
+    createCourseSchema,
+    joinCourseSchema,
+    updateCourseSchema,
+} from './course.types.js';
 import {
     findCourseById,
     findCourseOwnerId,
     findCoursesForUser,
     findCourseWithMembers,
+    updateCourse,
     deleteCourse,
     removeCourseMember,
 } from './course.repository.js';
@@ -54,6 +59,38 @@ async function getCourseHandler(
         }
 
         return res.json({ course });
+    } catch (error) {
+        next(error);
+    }
+}
+
+async function updateCourseHandler(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+) {
+    try {
+        const course = await findCourseOwnerId(req.params.id);
+
+        if (!course) {
+            return res.status(404).json({ error: 'Course not found' });
+        }
+
+        if (course.createdById !== req.user.id) {
+            return res.status(403).json({
+                error: 'Only the course creator can update this course',
+            });
+        }
+
+        const parsed = updateCourseSchema.safeParse(req.body);
+        if (!parsed.success) {
+            return res.status(400).json({
+                error: parsed.error.issues[0]?.message || 'Invalid data',
+            });
+        }
+
+        const updated = await updateCourse(req.params.id, parsed.data);
+        return res.json({ course: updated });
     } catch (error) {
         next(error);
     }
@@ -154,9 +191,13 @@ async function getMembersHandler(
             return res.status(404).json({ error: 'Course not found' });
         }
 
-        if (course.createdById !== req.user.id) {
+        // Allow both the creator and enrolled members to view the member list
+        const isCreator = course.createdById === req.user.id;
+        const isMember = course.members.some((m) => m.userId === req.user.id);
+
+        if (!isCreator && !isMember) {
             return res.status(403).json({
-                error: 'Only the course creator can view members',
+                error: 'You must be a member of this course to view its members',
             });
         }
 
@@ -196,6 +237,7 @@ export {
     createCourseHandler,
     listCoursesHandler,
     getCourseHandler,
+    updateCourseHandler,
     deleteCourseHandler,
     joinCourseHandler,
     leaveCourseHandler,

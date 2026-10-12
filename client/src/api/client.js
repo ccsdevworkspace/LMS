@@ -9,8 +9,11 @@ if (branch && branch !== 'main') {
     import.meta.env.VITE_API_BASE_URL = `https://lms--${slug}.ccs-dev.deno.net`;
 }
 
+const rawApiUrl = import.meta.env.VITE_API_BASE_URL;
+const baseURL = (rawApiUrl && rawApiUrl !== 'undefined') ? rawApiUrl : 'http://localhost:3000';
+
 const api = axios.create({
-    baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000',
+    baseURL,
     timeout: 10000,
     withCredentials: true,
     headers: {
