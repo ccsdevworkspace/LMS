@@ -17,6 +17,7 @@ export function errorHandler(
     if (name === 'MulterError') {
         return res.status(400).json({ error: 'File upload failed' });
     }
+
     if (typeof status === 'number' && status >= 400 && status < 600) {
         return res.status(status).json({ error: message || 'Error occurred' });
     }
