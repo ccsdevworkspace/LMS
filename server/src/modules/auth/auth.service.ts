@@ -3,14 +3,12 @@ import { saveUser } from './auth.repository.js';
 
 type SupabaseClient = ReturnType<typeof createSupabaseClient>;
 
-export async function initiateOAuth(
-    supabase: SupabaseClient,
-    baseUrl: string,
-    returnTo?: string,
-) {
-    const redirectTo = returnTo
-        ? `${baseUrl}/auth/callback?returnTo=${encodeURIComponent(returnTo)}`
-        : `${baseUrl}/auth/callback`;
+export async function initiateOAuth(supabase: SupabaseClient, baseUrl: string) {
+    // Do NOT embed returnTo in the redirectTo URL — Supabase validates the
+    // redirectTo against the allowlist and query params can cause a mismatch.
+    // The returnTo is already persisted in the oauth_return_to cookie, so the
+    // callback handler will pick it up from there.
+    const redirectTo = `${baseUrl}/auth/callback`;
 
     const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',

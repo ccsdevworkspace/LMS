@@ -17,9 +17,11 @@ import Todo from './pages/Todo'
 import Calendar from './pages/Calendar'
 import Chat from './pages/Chat'
 import Error from './pages/Error'
+import JoinViaLink from './pages/JoinViaLink'
 
 export default createBrowserRouter([
   { index: true, element: <Home/> },
+  { path: 'join/:code', element: <JoinViaLink /> },
   {
     element: <RequireAuth/>,
     children: [

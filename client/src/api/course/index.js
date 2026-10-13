@@ -25,6 +25,11 @@ async function deleteCourse(id) {
   return response.data
 }
 
+async function getCoursePreview(code) {
+  const response = await api.get(`/courses/join/${code}`)
+  return response.data
+}
+
 async function joinCourse(data) {
   const response = await api.post('/courses/join', data)
   return response.data
@@ -49,6 +54,7 @@ export {
     listCourses,
     createCourse,
     getCourse,
+    getCoursePreview,
     updateCourse,
     deleteCourse,
     joinCourse,
