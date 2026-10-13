@@ -3,7 +3,8 @@ import axios from 'axios';
 const branch = process.env.VERCEL_GIT_COMMIT_REF || '';
 const slug = branch
     .replace(/\//g, '')
-    .toLowerCase();
+    .toLowerCase()
+    .slice(0, 25);
 
 if (branch && branch !== 'main') {
     import.meta.env.VITE_API_BASE_URL = `https://lms--${slug}.ccs-dev.deno.net`;

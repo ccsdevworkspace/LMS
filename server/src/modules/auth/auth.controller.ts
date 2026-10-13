@@ -1,12 +1,52 @@
 import { Request, Response } from 'express';
+import { parseCookieHeader } from '@supabase/ssr';
 import { createSupabaseClient } from '../../config/supabaseClient.js';
 import { initiateOAuth, handleOAuthCallback } from './auth.service.js';
 import { env } from '../../config/env.config.js';
+import { isAllowedOrigin } from '../../config/cors.config.js';
 
 export async function handleOAuth(req: Request, res: Response) {
     try {
+        const rawReturnTo = req.query.returnTo as string | undefined;
+        let validReturnTo: string | undefined;
+
+        if (rawReturnTo) {
+            try {
+                const parsedUrl = new URL(rawReturnTo);
+                if (isAllowedOrigin(parsedUrl.origin)) {
+                    validReturnTo = parsedUrl.origin;
+                }
+            } catch {
+                // Invalid URL format, ignore
+            }
+        }
+
+        const crossSite = process.env.CROSS_SITE === 'true';
+        const sameSite = crossSite ? 'none' : 'lax';
+        const secure = crossSite || env.isProduction;
+
+        if (validReturnTo) {
+            res.cookie('oauth_return_to', validReturnTo, {
+                httpOnly: true,
+                secure,
+                sameSite,
+                maxAge: 10 * 60 * 1000,
+                path: '/',
+            });
+        }
+
+        const forwardedProto = (req.headers['x-forwarded-proto'] as string)
+            ?.split(',')[0]
+            .trim();
+        const isSecure =
+            forwardedProto === 'https' ||
+            req.secure ||
+            req.get('host')?.includes('deno.net') ||
+            env.isProduction;
+        const protocol = isSecure ? 'https' : 'http';
+        const serverOrigin = env.baseUrl || `${protocol}://${req.get('host')}`;
         const supabase = createSupabaseClient(req, res);
-        const url = await initiateOAuth(supabase);
+        const url = await initiateOAuth(supabase, serverOrigin, validReturnTo);
 
         return res.redirect(url);
     } catch (err) {
@@ -16,6 +56,36 @@ export async function handleOAuth(req: Request, res: Response) {
 }
 
 export async function handleCallback(req: Request, res: Response) {
+    const cookies = parseCookieHeader(req.headers.cookie ?? '');
+    const cookieReturnTo = cookies.find(
+        (c) => c.name === 'oauth_return_to',
+    )?.value;
+    const rawReturnTo =
+        (req.query.returnTo as string | undefined) || cookieReturnTo;
+
+    let targetOrigin = env.allowedOrigin;
+    if (rawReturnTo) {
+        try {
+            const parsedUrl = new URL(rawReturnTo);
+            if (isAllowedOrigin(parsedUrl.origin)) {
+                targetOrigin = parsedUrl.origin;
+            }
+        } catch {
+            // Invalid URL format, fallback to default allowedOrigin
+        }
+    }
+
+    const crossSite = process.env.CROSS_SITE === 'true';
+    const sameSite = crossSite ? 'none' : 'lax';
+    const secure = crossSite || env.isProduction;
+
+    res.clearCookie('oauth_return_to', {
+        httpOnly: true,
+        secure,
+        sameSite,
+        path: '/',
+    });
+
     try {
         const code = req.query.code as string;
 
@@ -26,10 +96,10 @@ export async function handleCallback(req: Request, res: Response) {
         const supabase = createSupabaseClient(req, res);
         await handleOAuthCallback(supabase, code);
 
-        return res.redirect(env.allowedOrigin); //Web only. Multiple client redirects not yet supported
+        return res.redirect(targetOrigin);
     } catch (err) {
         console.error('Callback error:', err);
-        return res.redirect(`${env.allowedOrigin}/login?error=auth_failed`);
+        return res.redirect(`${targetOrigin}/login?error=auth_failed`);
     }
 }
 

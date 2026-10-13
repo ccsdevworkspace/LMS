@@ -17,6 +17,8 @@ import { errorHandler } from './middleware/error.middleware.js';
 const server = express();
 const PORT = process.env.PORT || 3000;
 
+server.set('trust proxy', 1);
+
 server.use(corsConfig);
 server.use(rateLimiter);
 server.use(helmet());
