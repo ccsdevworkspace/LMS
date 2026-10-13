@@ -29,7 +29,8 @@ export const useAuthStore = create((set) => ({
   login: () => {
     const rawApiUrl = import.meta.env.VITE_API_BASE_URL
     const baseUrl = (rawApiUrl && rawApiUrl !== 'undefined') ? rawApiUrl : 'http://localhost:3000'
-    window.location.href = `${baseUrl}/auth/oauth`
+    const returnTo = encodeURIComponent(window.location.origin)
+    window.location.href = `${baseUrl}/auth/oauth?returnTo=${returnTo}`
   },
 
   logout: async () => {

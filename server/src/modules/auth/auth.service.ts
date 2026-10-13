@@ -4,11 +4,18 @@ import { saveUser } from './auth.repository.js';
 
 type SupabaseClient = ReturnType<typeof createSupabaseClient>;
 
-export async function initiateOAuth(supabase: SupabaseClient) {
+export async function initiateOAuth(
+    supabase: SupabaseClient,
+    returnTo?: string,
+) {
+    const redirectTo = returnTo
+        ? `${env.baseUrl}/auth/callback?returnTo=${encodeURIComponent(returnTo)}`
+        : `${env.baseUrl}/auth/callback`;
+
     const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-            redirectTo: `${env.baseUrl}/auth/callback`,
+            redirectTo,
         },
     });
 
