@@ -14,7 +14,8 @@
     "lint": "eslint . --max-warnings 0",
     "lint:fix": "eslint . --fix",
     "format": "prettier --write .",
-    "format:check": "prettier --check ."
+    "format:check": "prettier --check .",
+    "db:migrate": "prisma migrate deploy"
   },
   "devDependencies": {
     "@babel/core": "^7.28.0",

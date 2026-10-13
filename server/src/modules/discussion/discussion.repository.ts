@@ -9,7 +9,7 @@ const userBrief = {
 };
 
 export async function findCourseMessages(courseId: string) {
-    return (prisma as any).discussionMessage.findMany({
+    return prisma.discussionMessage.findMany({
         where: { courseId },
         orderBy: { createdAt: 'asc' },
         include: {
@@ -23,7 +23,7 @@ export async function createDiscussionMessage(
     senderId: string,
     content: string,
 ) {
-    return (prisma as any).discussionMessage.create({
+    return prisma.discussionMessage.create({
         data: {
             courseId,
             senderId,
@@ -36,13 +36,13 @@ export async function createDiscussionMessage(
 }
 
 export async function findMessageById(messageId: string) {
-    return (prisma as any).discussionMessage.findUnique({
+    return prisma.discussionMessage.findUnique({
         where: { id: messageId },
     });
 }
 
 export async function deleteDiscussionMessage(messageId: string) {
-    return (prisma as any).discussionMessage.delete({
+    return prisma.discussionMessage.delete({
         where: { id: messageId },
     });
 }
