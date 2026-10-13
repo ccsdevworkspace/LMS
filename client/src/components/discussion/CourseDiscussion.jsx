@@ -1,10 +1,11 @@
 import { useEffect, useState, useRef } from 'react'
 import { useParams, Link } from 'react-router-dom'
-import { ChevronLeft, ChevronRight, Users, ArrowUp, Trash2 } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Users, ArrowUp, Trash2, ArrowRight } from 'lucide-react'
 import { useCourseStore } from '../../stores/course'
 import { useUserStore } from '../../stores/user'
 import { useDiscussionStore } from '../../stores/discussion'
 import Loading from '../app/Loading'
+import Modal from '../app/Modal'
 
 function MemberAvatar({ avatarUrl, fullName }) {
   const [imgError, setImgError] = useState(false)
@@ -64,6 +65,7 @@ export default function CourseDiscussion() {
 
   const [inputContent, setInputContent] = useState('')
   const [sending, setSending] = useState(false)
+  const [deletingId, setDeletingId] = useState(null)
   const messagesEndRef = useRef(null)
   const inputRef = useRef(null)
 
@@ -87,7 +89,7 @@ export default function CourseDiscussion() {
   // Scroll to bottom on new messages
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }, [messages])
+  }, [messages.length])
 
   const handleSend = async (e) => {
     e?.preventDefault()
@@ -114,13 +116,13 @@ export default function CourseDiscussion() {
     }
   }
 
-  const handleDelete = async (messageId) => {
-    if (window.confirm('Delete this message?')) {
-      try {
-        await deleteMessage(id, messageId)
-      } catch (err) {
-        console.error(err)
-      }
+  const handleConfirmDelete = async () => {
+    if (!deletingId) return
+    try {
+      await deleteMessage(id, deletingId)
+      setDeletingId(null)
+    } catch (err) {
+      console.error(err)
     }
   }
 
@@ -132,9 +134,9 @@ export default function CourseDiscussion() {
   const hasText = inputContent.trim().length > 0
 
   return (
-    <div className="flex flex-col h-full max-w-4xl mx-auto w-full px-4 sm:px-8 py-6">
+    <div className="flex flex-col h-full min-h-0 max-w-4xl mx-auto w-full px-4 sm:px-8 py-4 sm:py-6">
       {/* Top Navigation */}
-      <nav className="mb-4">
+      <nav className="mb-3 shrink-0">
         <Link
           to={`/courses/${id}`}
           className="inline-flex items-center gap-1 text-sm font-bold text-primary-600 hover:text-primary-600/80 transition-colors uppercase tracking-wider"
@@ -145,7 +147,7 @@ export default function CourseDiscussion() {
       </nav>
 
       {/* Header */}
-      <header className="flex items-center justify-between gap-4 pb-6 border-b border-border">
+      <header className="flex items-center justify-between gap-4 pb-4 border-b border-border shrink-0">
         <div>
           <h1 className="text-3xl sm:text-4xl font-extrabold text-fg tracking-tight">
             {currentCourse?.name || 'Subject'}
@@ -167,7 +169,7 @@ export default function CourseDiscussion() {
       </header>
 
       {/* Chat Messages Feed */}
-      <div className="flex-1 overflow-y-auto py-6 space-y-6">
+      <div className="flex-1 min-h-0 overflow-y-auto py-4 space-y-6 scrollbar-thin">
         {messagesLoading && messages.length === 0 ? (
           <div className="flex items-center justify-center py-16 text-sm text-fg-subtle">
             Loading discussions...
@@ -193,13 +195,12 @@ export default function CourseDiscussion() {
               <div key={msg.id} className="space-y-4">
                 {/* Date separator divider */}
                 {showDateDivider && (
-                  <div className="relative flex items-center justify-center my-6">
-                    <div className="absolute inset-0 flex items-center">
-                      <div className="w-full border-t border-border" />
-                    </div>
-                    <div className="relative bg-app px-4 text-xs font-semibold text-fg-subtle">
+                  <div className="flex items-center my-6 gap-4">
+                    <div className="flex-1 border-t border-border"/>
+                    <span className="text-xs text-fg-muted font-semibold">
                       {formatDateLabel(msg.createdAt)}
-                    </div>
+                    </span>
+                    <div className="flex-1 border-t border-border"/>
                   </div>
                 )}
 
@@ -226,7 +227,7 @@ export default function CourseDiscussion() {
                       {canDelete && (
                         <button
                           type="button"
-                          onClick={() => handleDelete(msg.id)}
+                          onClick={() => setDeletingId(msg.id)}
                           title="Delete message"
                           className="opacity-0 group-hover:opacity-100 text-fg-subtle hover:text-danger transition-opacity p-0.5 ml-2 cursor-pointer"
                         >
@@ -247,7 +248,7 @@ export default function CourseDiscussion() {
       </div>
 
       {/* Message Input Box */}
-      <form onSubmit={handleSend} className="pt-2 pb-2">
+      <form onSubmit={handleSend} className="shrink-0 pt-2 pb-1">
         <div className="relative flex items-center w-full rounded-2xl border border-border bg-card shadow-sm px-4 py-2.5 focus-within:border-primary-600/60 focus-within:ring-2 focus-within:ring-primary-600/15 transition-all">
           <input
             ref={inputRef}
@@ -273,6 +274,34 @@ export default function CourseDiscussion() {
           </button>
         </div>
       </form>
+
+      <Modal
+        open={Boolean(deletingId)}
+        closeModal={() => setDeletingId(null)}
+        title="Delete Message"
+        subtitle="Are you sure?"
+        fullScreen={false}
+      >
+        <div className="flex justify-end items-center gap-3">
+          <button
+            onClick={() => setDeletingId(null)}
+            className="px-6 py-2.5 text-sm font-bold text-fg transition hover:opacity-70"
+          >
+            Cancel
+          </button>
+
+          <button
+            onClick={handleConfirmDelete}
+            className="group flex items-center gap-2 rounded-full bg-btn px-8 py-2.5 text-sm font-bold text-fg-inverse dark:text-fg transition hover:bg-btn-hover"
+          >
+            Delete
+            <ArrowRight
+              size={18}
+              className="transition-transform duration-200 group-hover:translate-x-1"
+            />
+          </button>
+        </div>
+      </Modal>
     </div>
   )
 }
