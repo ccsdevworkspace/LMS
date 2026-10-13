@@ -11,6 +11,7 @@ import {
 } from './course.types.js';
 import {
     findCourseById,
+    findCourseByJoinCode,
     findCourseOwnerId,
     findCoursesForUser,
     findCourseWithMembers,
@@ -233,6 +234,33 @@ async function removeMemberHandler(
     }
 }
 
+async function getCoursePreviewHandler(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+) {
+    try {
+        const course = await findCourseByJoinCode(req.params.code);
+
+        if (!course) {
+            return res.status(404).json({ error: 'Course not found' });
+        }
+
+        // Return only public preview info — no sensitive data
+        return res.json({
+            course: {
+                id: course.id,
+                name: course.name,
+                section: course.section,
+                joinCode: course.joinCode,
+                createdBy: course.createdBy,
+            },
+        });
+    } catch (error) {
+        next(error);
+    }
+}
+
 export {
     createCourseHandler,
     listCoursesHandler,
@@ -243,4 +271,5 @@ export {
     leaveCourseHandler,
     getMembersHandler,
     removeMemberHandler,
+    getCoursePreviewHandler,
 };

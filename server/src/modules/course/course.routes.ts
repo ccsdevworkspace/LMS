@@ -10,9 +10,13 @@ import {
     leaveCourseHandler,
     getMembersHandler,
     removeMemberHandler,
+    getCoursePreviewHandler,
 } from './course.controller.js';
 
 const router = Router();
+
+// Public route — no auth required (used for invite link preview)
+router.get('/courses/join/:code', getCoursePreviewHandler);
 
 router.use(authenticate);
 
