@@ -17,4 +17,5 @@ model Course {
   attendanceSessions AttendanceSession[]
   calendarEvents     CalendarEvent[]
   liveClasses        LiveClass[]
+  discussionMessages DiscussionMessage[]
 }

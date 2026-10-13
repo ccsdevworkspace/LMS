@@ -1,0 +1,13 @@
+model DiscussionMessage {
+  id        String   @id @default(cuid())
+  courseId  String
+  course    Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  senderId  String   @db.Uuid
+  sender    User     @relation(fields: [senderId], references: [id], onDelete: Cascade)
+
+  content   String
+  createdAt DateTime @default(now())
+
+  @@index([courseId, createdAt])
+}

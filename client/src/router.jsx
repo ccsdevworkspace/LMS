@@ -11,6 +11,8 @@ import Tasks from './components/tasks/Tasks'
 import CreateTask from './components/tasks/CreateTask'
 import TaskDetail from './components/tasks/TaskDetail'
 import Submissions from './components/tasks/Submissions'
+import CourseDiscussion from './components/discussion/CourseDiscussion'
+import CourseMembersView from './components/discussion/CourseMembersView'
 import Todo from './pages/Todo'
 import Calendar from './pages/Calendar'
 import Chat from './pages/Chat'
@@ -41,6 +43,8 @@ export default createBrowserRouter([
           { path:'courses/:id/task/create', element: <CreateTask/> },
           { path:'courses/:id/task/:taskId', element: <TaskDetail/> },
           { path:'courses/:id/task/:taskId/submissions', element: <Submissions/> },
+          { path:'courses/:id/discussion', element: <CourseDiscussion/> },
+          { path:'courses/:id/discussion/members', element: <CourseMembersView/> },
         ],
       },
     ],
