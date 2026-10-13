@@ -35,8 +35,16 @@ export async function handleOAuth(req: Request, res: Response) {
             });
         }
 
-        const serverOrigin =
-            env.baseUrl || `${req.protocol}://${req.get('host')}`;
+        const forwardedProto = (req.headers['x-forwarded-proto'] as string)
+            ?.split(',')[0]
+            .trim();
+        const isSecure =
+            forwardedProto === 'https' ||
+            req.secure ||
+            req.get('host')?.includes('deno.net') ||
+            env.isProduction;
+        const protocol = isSecure ? 'https' : 'http';
+        const serverOrigin = env.baseUrl || `${protocol}://${req.get('host')}`;
         const supabase = createSupabaseClient(req, res);
         const url = await initiateOAuth(supabase, serverOrigin, validReturnTo);
 
