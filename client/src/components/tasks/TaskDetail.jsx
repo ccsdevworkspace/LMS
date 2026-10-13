@@ -6,7 +6,6 @@ import { useCourseStore } from '../../stores/course'
 import { useUserStore } from '../../stores/user'
 import Loading from '../app/Loading'
 import Modal from '../app/Modal'
-import Error from '../../pages/Error'
 import StudentSubmission from './StudentSubmission'
 import { getTaskType, formatDate, getFileName } from './taskTypes'
 
@@ -123,16 +122,12 @@ export default function TaskDetail() {
 
   const isTeacher = currentTask?.createdById === profile?.id
 
-  if (loading && !currentTask) {
+  if (!currentTask) {
     return (
       <div className="flex justify-center items-center p-8 h-full">
         <Loading />
       </div>
     )
-  }
-
-  if (!currentTask) {
-    return <Error />
   }
 
   const { icon: Icon, badge } = getTaskType(currentTask.type)
