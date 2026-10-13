@@ -35,8 +35,10 @@ export async function handleOAuth(req: Request, res: Response) {
             });
         }
 
+        const serverOrigin =
+            env.baseUrl || `${req.protocol}://${req.get('host')}`;
         const supabase = createSupabaseClient(req, res);
-        const url = await initiateOAuth(supabase, validReturnTo);
+        const url = await initiateOAuth(supabase, serverOrigin, validReturnTo);
 
         return res.redirect(url);
     } catch (err) {

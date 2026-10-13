@@ -1,16 +1,16 @@
 import type { createSupabaseClient } from '../../config/supabaseClient.js';
-import { env } from '../../config/env.config.js';
 import { saveUser } from './auth.repository.js';
 
 type SupabaseClient = ReturnType<typeof createSupabaseClient>;
 
 export async function initiateOAuth(
     supabase: SupabaseClient,
+    baseUrl: string,
     returnTo?: string,
 ) {
     const redirectTo = returnTo
-        ? `${env.baseUrl}/auth/callback?returnTo=${encodeURIComponent(returnTo)}`
-        : `${env.baseUrl}/auth/callback`;
+        ? `${baseUrl}/auth/callback?returnTo=${encodeURIComponent(returnTo)}`
+        : `${baseUrl}/auth/callback`;
 
     const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',

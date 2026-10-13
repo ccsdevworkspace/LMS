@@ -1,7 +1,7 @@
 import fs from 'fs';
 
 const branch = process.env.VERCEL_GIT_COMMIT_REF || '';
-const slug = branch.replace(/\//g, '').toLowerCase();
+const slug = branch.replace(/\//g, '').toLowerCase().slice(0, 25);
 
 const apiUrl = (branch && branch !== 'main')
     ? `https://lms--${slug}.ccs-dev.deno.net`
