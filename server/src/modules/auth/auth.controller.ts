@@ -46,7 +46,7 @@ export async function handleOAuth(req: Request, res: Response) {
         const protocol = isSecure ? 'https' : 'http';
         const serverOrigin = env.baseUrl || `${protocol}://${req.get('host')}`;
         const supabase = createSupabaseClient(req, res);
-        const url = await initiateOAuth(supabase, serverOrigin, validReturnTo);
+        const url = await initiateOAuth(supabase, serverOrigin);
 
         return res.redirect(url);
     } catch (err) {
