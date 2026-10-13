@@ -20,4 +20,5 @@ model User {
   calendarEvents    CalendarEvent[]
   hostedLiveClasses LiveClass[]
   todos             Todo[]
+  discussionMessages DiscussionMessage[]
 }

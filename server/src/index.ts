@@ -11,6 +11,7 @@ import courseRoute from './modules/course/course.routes.js';
 import liveClassRoute from './modules/live-class/live-class.routes.js';
 import taskRoute from './modules/task/task.routes.js';
 import todoRoute from './modules/todo/todo.routes.js';
+import discussionRoute from './modules/discussion/discussion.routes.js';
 import { errorHandler } from './middleware/error.middleware.js';
 
 const server = express();
@@ -29,6 +30,7 @@ server.use(courseRoute);
 server.use(liveClassRoute);
 server.use(taskRoute);
 server.use(todoRoute);
+server.use(discussionRoute);
 server.use(errorHandler);
 
 server.listen(PORT, () => {
